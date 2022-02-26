@@ -1,5 +1,5 @@
 # nighthawk-kingdoms
 
-A multiplayer mobile game. Players will have the chance to build their own kingdom, train their army, and attack rivalling armies.
+A multiplayer mobile game available for Steam and Andriod. Players will have the chance to build their own kingdom, train an army, and attack rivalling players.
 
 **Under Development**
