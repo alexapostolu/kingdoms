@@ -54,7 +54,7 @@ int main(int argv, char** args)
             return 0;
         }
 
-        TTF_Font* Sans = TTF_OpenFont("C:\\dev\\repos\\nighthawk-kingdoms\\src\\brygada.ttf", 50);
+        TTF_Font* Sans = TTF_OpenFont("C:\\dev\\repos\\nighthawk-kingdoms\\assets\\brygada.ttf", 50);
  
         SDL_Color Black = { 0, 0, 0 };
 
