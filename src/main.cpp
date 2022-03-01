@@ -1,83 +1,80 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "base.hpp"
 #include "tile.hpp"
 
-#include <stdio.h>
 #include <iostream>
+#include <string>
 
-#define SCREEN_WIDTH 1170
-#define SCREEN_HEIGHT 525
+constexpr int SCREEN_WIDTH = 1170,
+			  SCREEN_HEIGHT = 525;
 
-int main(int argv, char** args)
+int main(int argc, char* argv[])
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    {
-        printf("Error: SDL failed to initialize\nSDL Error: '%s'\n", SDL_GetError());
-        return 1;
-    }
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
+		std::cout << "error - failed to initialize SDL\n" << SDL_GetError();
+		return 1;
+	}
 
-    SDL_Window *window = SDL_CreateWindow("Nighthawk - Kingdoms", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
-    if (!window)
-    {
-        printf("Error: Failed to open window\nSDL Error: '%s'\n", SDL_GetError());
-        return 1;
-    }
+	SDL_Window* window = SDL_CreateWindow("Nighthawk - Kingdoms",
+										  SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+										  SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	if (!window)
+	{
+		std::cout << "error - failed to open window\n" << SDL_GetError();
+		return 1;
+	}
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer)
-    {
-        printf("Error: Failed to create renderer\nSDL Error: '%s'\n", SDL_GetError());
-        return 1;
-    }
+	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	if (!renderer)
+	{
+		std::cout << "error - failed to create renderer\n" << SDL_GetError();
+		return 1;
+	}
 
-    bool running = true;
-    while(running){
-        SDL_Event event;
-        while(SDL_PollEvent(&event)){
-            switch(event.type){
-                case SDL_QUIT:
-                    running = false;
-                    break;
+	if (TTF_Init() == -1)
+	{
+		std::cout << "error - failed to initialize TTF\n" << TTF_GetError();
+		return 1;
+	}
 
-                default:
-                    break;
-            }
-        }
+	TTF_Font* ttf_brygada = TTF_OpenFont("../assets/brygada.ttf", 24);
+	SDL_Color clr_black{ 0, 0, 0 };
 
-        SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
-        SDL_RenderClear(renderer);
+	while (true)
+	{
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
+		{
+			switch (event.type)
+			{
+				case SDL_QUIT:
+					goto END_SDL;
+				default:
+					break;
+			}
+		}
 
-        if (TTF_Init() == -1)
-        {
-            std::cout << "TTF_Init() Failed: " << TTF_GetError();
-            return 0;
-        }
+		SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
+		SDL_RenderClear(renderer);
 
-        TTF_Font* Sans = TTF_OpenFont("C:\\dev\\repos\\nighthawk-kingdoms\\assets\\brygada.ttf", 50);
- 
-        SDL_Color Black = { 0, 0, 0 };
 
-        SDL_Surface* surfaceMessage =
-            TTF_RenderText_Solid(Sans, "Gold: 4267", Black);
+		std::string gold = "Gold: " + std::to_string(Base::get().gold);
+		SDL_Surface* text_surface = TTF_RenderText_Solid(ttf_brygada, gold.c_str(), clr_black);
+		SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+		SDL_Rect text_rect{ SCREEN_WIDTH - 350, 20, 100, 20 };
 
-        SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
 
-        SDL_Rect Message_rect; //create a rect
-        Message_rect.x = 0;  //controls the rect's x coordinate 
-        Message_rect.y = 0; // controls the rect's y coordinte
-        Message_rect.w = 500; // controls the width of the rect
-        Message_rect.h = 100; // controls the height of the rect
-
-        SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
-
-        SDL_FreeSurface(surfaceMessage);
-        SDL_DestroyTexture(Message);
+		SDL_FreeSurface(text_surface);
+		SDL_DestroyTexture(text_texture);
 
 
 
-        SDL_RenderPresent(renderer);
-    }
+		SDL_RenderPresent(renderer);
+	}
 
-    return 0;
+END_SDL:;
 }
