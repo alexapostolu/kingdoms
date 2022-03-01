@@ -1,6 +1,6 @@
 out/
 .vs/
 CMakeSettings.json
-build/*.pdb
-build/*.exe
-build/*.ilk
+*.pdb
+*.exe
+*.ilk
