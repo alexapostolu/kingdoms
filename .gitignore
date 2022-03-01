@@ -3,4 +3,4 @@ out/
 CMakeSettings.json
 *.pdb
 *.exe
-*.ilk
+build/kingdom.ilk
