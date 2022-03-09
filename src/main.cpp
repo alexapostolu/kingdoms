@@ -60,11 +60,13 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
 		SDL_RenderClear(renderer);
 
-
-		std::string gold = "Gold: " + std::to_string(Base::get().gold);
-		SDL_Surface* text_surface = TTF_RenderText_Solid(ttf_brygada, gold.c_str(), clr_black);
+		std::string text_message = "Gold: " + std::to_string(Base::get().gold);
+		SDL_Surface* text_surface = TTF_RenderText_Solid(ttf_brygada, text_message.c_str(), clr_black);
 		SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
-		SDL_Rect text_rect{ SCREEN_WIDTH - 350, 20, 100, 20 };
+		int text_w = 100, text_h = 20;
+		int s = TTF_SizeText(ttf_brygada, text_message.c_str(), &text_w, &text_h);
+		SDL_Rect text_rect{ (SCREEN_WIDTH - text_w) - 20, 20, text_w, text_h };
+
 
 		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
 
