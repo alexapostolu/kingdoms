@@ -5,6 +5,9 @@
 
 #include <memory>
 
+namespace sdl2
+{
+
 struct SDL_Deleter
 {
 	void operator()(SDL_Window*   ptr) { if (ptr) SDL_DestroyWindow(ptr); }
@@ -17,6 +20,8 @@ using window_ptr   = std::unique_ptr<SDL_Window,   SDL_Deleter>;
 using renderer_ptr = std::unique_ptr<SDL_Renderer, SDL_Deleter>;
 using surface_ptr  = std::unique_ptr<SDL_Surface,  SDL_Deleter>;
 using texture_ptr  = std::unique_ptr<SDL_Texture,  SDL_Deleter>;
+	
+}
 
 class SDL_Main
 {
@@ -37,6 +42,6 @@ public:
 	}
 
 private:
-	SDL_Window* window;
-	SDL_Renderer* renderer;
+	sdl2::window_ptr window;
+	sdl2::texture_ptr renderer;
 }
