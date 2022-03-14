@@ -13,10 +13,10 @@ struct SDL_Deleter
 	void operator()(SDL_Texture*  ptr) { if (ptr) SDL_DestroyTexture(ptr); }
 };
 
-using WindowPtr   = std::unique_ptr<SDL_Window,   SDL_Deleter>;
-using RendererPtr = std::unique_ptr<SDL_Renderer, SDL_Deleter>;
-using SurfacePtr  = std::unique_ptr<SDL_Surface,  SDL_Deleter>;
-using TexturePtr  = std::unique_ptr<SDL_Texture,  SDL_Deleter>;
+using window_ptr   = std::unique_ptr<SDL_Window,   SDL_Deleter>;
+using renderer_ptr = std::unique_ptr<SDL_Renderer, SDL_Deleter>;
+using surface_ptr  = std::unique_ptr<SDL_Surface,  SDL_Deleter>;
+using texture_ptr  = std::unique_ptr<SDL_Texture,  SDL_Deleter>;
 
 class SDL_Main
 {
