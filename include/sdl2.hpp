@@ -39,6 +39,8 @@ enum class TTF_Align
 };
 
 std::string const str_brygada = "../assets/brygada.ttf";
-SDL_Color const clr_black{ 0, 0, 0 };
+SDL_Color const clr_black{ 0, 0, 0, 255 };
+SDL_Color const clr_yellow{ 255, 239, 0, 255 };
+SDL_Color const clr_white{ 255, 255, 255, 255 };
 
 }

@@ -40,20 +40,9 @@ int main(int argc, char* argv[])
 		Screen::get().clear();
 		
 
+		Base::get().display_resources();
+		Base::get().display_shop();
 
-		std::string text_msg = "Gold: " + std::to_string(Base::get().gold);
-		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 20, sdl2::TTF_Align::RIGHT);
-		
-		text_msg = "Wheat: " + std::to_string(Base::get().gold);
-		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 60, sdl2::TTF_Align::RIGHT);
-
-		text_msg = "Wood: " + std::to_string(Base::get().gold);
-		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 100, sdl2::TTF_Align::RIGHT);
-
-		text_msg = "Gems: " + std::to_string(Base::get().gold);
-		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 140, sdl2::TTF_Align::RIGHT);
-		
-		
 
 		Screen::get().update();
 	}

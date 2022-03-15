@@ -26,14 +26,16 @@ public:
 
 	void text(std::string const& text, SDL_Color const& colour, std::string const& font, int size,
 		int x, int y, sdl2::TTF_Align alignment);
+	void rect(int x, int y, int width, int height, SDL_Color colour);
+
+public:
+	int const SCREEN_WIDTH,
+			  SCREEN_HEIGHT;
 
 private:
 	Screen();
 
 private:
-	int const SCREEN_WIDTH,
-			  SCREEN_HEIGHT;
-
 	sdl2::window_ptr window;
 	sdl2::renderer_ptr renderer;
 };

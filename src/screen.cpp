@@ -12,8 +12,7 @@ Screen::Screen()
 	, window(SDL_CreateWindow("Nighthawk - Kingdoms",
 				 SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 				 SCREEN_WIDTH, SCREEN_HEIGHT, 0))
-{
-
+{	
 	if (!window)
 	{
 		std::cout << "error - failed to open window\n" << SDL_GetError();
@@ -26,6 +25,8 @@ Screen::Screen()
 		std::cout << "error - failed to create renderer\n" << SDL_GetError();
 		return;
 	}
+
+	SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
 }
 
 void Screen::update()
@@ -35,7 +36,7 @@ void Screen::update()
 
 void Screen::clear()
 {
-	SDL_SetRenderDrawColor(renderer.get(), 0, 200, 0, 255);
+	SDL_SetRenderDrawColor(renderer.get(), 120, 255, 0, 255);
 	SDL_RenderClear(renderer.get());
 }
 
@@ -57,13 +58,24 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 	case sdl2::TTF_Align::LEFT:
 		text_rect.x = x;
 		text_rect.y = y;
+		break;
 	case sdl2::TTF_Align::CENTER:
 		text_rect.x = x - (text_w / 2);
 		text_rect.y = y;
+		break;
 	case sdl2::TTF_Align::RIGHT:
 		text_rect.x = (SCREEN_WIDTH - text_w) - x;
 		text_rect.y = y;
+		break;
 	};
 
 	SDL_RenderCopy(renderer.get(), text_texture.get(), NULL, &text_rect);
+}
+
+void Screen::rect(int x, int y, int width, int height, SDL_Color clr)
+{
+	SDL_Rect rect{ x, y, width, height };
+
+	SDL_SetRenderDrawColor(renderer.get(), clr.r, clr.g, clr.b, 200);
+	SDL_RenderFillRect(renderer.get(), &rect);
 }
