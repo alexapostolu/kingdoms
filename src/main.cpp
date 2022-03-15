@@ -3,14 +3,12 @@
 
 #include "base.hpp"
 #include "tile.hpp"
-#include "sdl_main.hpp"
+#include "screen.hpp"
+#include "sdl2.hpp"
 
 #include <iostream>
 #include <memory>
 #include <string>
-
-constexpr int SCREEN_WIDTH = 1170,
-			  SCREEN_HEIGHT = 525;
 
 int main(int argc, char* argv[])
 {
@@ -19,34 +17,11 @@ int main(int argc, char* argv[])
 		std::cout << "error - failed to initialize SDL\n" << SDL_GetError();
 		return 1;
 	}
-
-	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window(
-		SDL_CreateWindow("Nighthawk - Kingdoms",
-			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			SCREEN_WIDTH, SCREEN_HEIGHT, 0),
-		SDL_DestroyWindow);
-
-	if (!window)
-	{
-		std::cout << "error - failed to open window\n" << SDL_GetError();
-		return 1;
-	}
-
-	SDL_Renderer* renderer = SDL_CreateRenderer(window.get(), -1, SDL_RENDERER_ACCELERATED);
-	if (!renderer)
-	{
-		std::cout << "error - failed to create renderer\n" << SDL_GetError();
-		return 1;
-	}
-
 	if (TTF_Init() == -1)
 	{
 		std::cout << "error - failed to initialize TTF\n" << TTF_GetError();
 		return 1;
 	}
-
-	TTF_Font* ttf_brygada = TTF_OpenFont("../assets/brygada.ttf", 24);
-	SDL_Color clr_black{ 0, 0, 0 };
 
 	while (true)
 	{
@@ -62,26 +37,27 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
-		SDL_RenderClear(renderer);
+		Screen::get().clear();
+		
+
+
+		std::string text_msg = "Gold: " + std::to_string(Base::get().gold);
+		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 20, sdl2::TTF_Align::RIGHT);
+		
+		text_msg = "Wheat: " + std::to_string(Base::get().gold);
+		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 60, sdl2::TTF_Align::RIGHT);
+
+		text_msg = "Wood: " + std::to_string(Base::get().gold);
+		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 100, sdl2::TTF_Align::RIGHT);
+
+		text_msg = "Gems: " + std::to_string(Base::get().gold);
+		Screen::get().text(text_msg, sdl2::clr_black, sdl2::str_brygada, 24, 20, 140, sdl2::TTF_Align::RIGHT);
 		
 		
 
-		std::string text_message = "Gold: " + std::to_string(Base::get().gold);
-		surface_ptr text_surface(TTF_RenderText_Solid(ttf_brygada, text_message.c_str(), clr_black));
-		texture_ptr text_texture(SDL_CreateTextureFromSurface(renderer, text_surface));
-		int text_w, text_h;
-		int s = TTF_SizeText(ttf_brygada, text_message.c_str(), &text_w, &text_h);
-		SDL_Rect text_rect{ (SCREEN_WIDTH - text_w) - 20, 20, text_w, text_h };
-		
-		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
-
-
-		
-		
-
-		SDL_RenderPresent(renderer);
+		Screen::get().update();
 	}
 
-END_SDL:;
+END_SDL:
+	return 0;
 }
