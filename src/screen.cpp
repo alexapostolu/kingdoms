@@ -47,12 +47,9 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 	sdl2::surface_ptr text_surface(TTF_RenderText_Solid(ttf_font.get(), text.c_str(), colour));
 	sdl2::texture_ptr text_texture(SDL_CreateTextureFromSurface(renderer.get(), text_surface.get()));
 
-	int text_w, text_h;
-	int s = TTF_SizeText(ttf_font.get(), text.c_str(), &text_w, &text_h);
-
 	SDL_Rect text_rect;
-	text_rect.w = text_w;
-	text_rect.h = text_h;
+	int s = TTF_SizeText(ttf_font.get(), text.c_str(), &text_rect.w, &text_rect.h);
+
 	switch (alignment)
 	{
 	case sdl2::TTF_Align::LEFT:
@@ -60,11 +57,11 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 		text_rect.y = y;
 		break;
 	case sdl2::TTF_Align::CENTER:
-		text_rect.x = x - (text_w / 2);
+		text_rect.x = x - (text_rect.x / 2);
 		text_rect.y = y;
 		break;
 	case sdl2::TTF_Align::RIGHT:
-		text_rect.x = (SCREEN_WIDTH - text_w) - x;
+		text_rect.x = (SCREEN_WIDTH - text_rect.x) - x;
 		text_rect.y = y;
 		break;
 	};
