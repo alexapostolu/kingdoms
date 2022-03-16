@@ -2,6 +2,7 @@
 #include "screen.hpp"
 #include "sdl2.hpp"
 
+#include <iostream>
 #include <string>
 
 Base& Base::get()
@@ -24,7 +25,7 @@ void Base::display_resources()
 	Screen::get().rect(0, 0, Screen::get().SCREEN_WIDTH, 65, sdl2::clr_black);
 	Screen::get().rect(0, 65, Screen::get().SCREEN_WIDTH, 5, sdl2::clr_yellow);
 
-	std::string gold = "Gold: 5656892567" + std::to_string(Base::get().gold);
+	std::string gold = "Gold: " + std::to_string(Base::get().gold);
 	std::string wheat = "Wheat: " + std::to_string(Base::get().wheat);
 	std::string wood = "Wood: " + std::to_string(Base::get().wood);
 	std::string gems = "Gems: " + std::to_string(Base::get().gems);

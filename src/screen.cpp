@@ -39,11 +39,11 @@ void Screen::clear()
 	SDL_SetRenderDrawColor(renderer.get(), 120, 255, 0, 255);
 	SDL_RenderClear(renderer.get());
 
-	int fw = SCREEN_WIDTH / 5, fh = SCREEN_HEIGHT / 4;
+	int fw = SCREEN_WIDTH / 5, fh = SCREEN_HEIGHT / 2;
 	for (int i = 0; i < 5; ++i)
 	{
-		for (int j = 0; j < 4; ++j)
-			Screen::get().image("../assets/grass.png", i * fw, j * fh, fw, fh);
+		for (int j = 0; j < 2; ++j)
+			Screen::get().image("../assets/grass.png", i * fw, j * fh, fw + 1, fh + 1);
 	}
 }
 
@@ -72,11 +72,11 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 		text_rect.y = y;
 		break;
 	case sdl2::TTF_Align::CENTER:
-		text_rect.x = x - (text_rect.x / 2);
+		text_rect.x = x - (text_rect.w / 2);
 		text_rect.y = y;
 		break;
 	case sdl2::TTF_Align::RIGHT:
-		text_rect.x = (SCREEN_WIDTH - text_rect.x) - x;
+		text_rect.x = (SCREEN_WIDTH - text_rect.w) - x;
 		text_rect.y = y;
 		break;
 	};
@@ -86,15 +86,11 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 
 void Screen::image(std::string const& file, int x, int y, int width, int height)
 {
-	SDL_Rect grass_rect;
-	grass_rect.x = x;
-	grass_rect.y = y;
-	grass_rect.w = width;
-	grass_rect.h = height;
+	SDL_Rect grass_rect{ x, y, width, height };
 
 	sdl2::surface_ptr image(IMG_Load(file.c_str()));
 	if (!image)
-		std::cout << IMG_GetError() << std::endl;
+		std::cout << "[error]\n" << IMG_GetError() << '\n';
 
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer.get(), image.get());
 	SDL_RenderCopy(renderer.get(), texture, NULL, &grass_rect);

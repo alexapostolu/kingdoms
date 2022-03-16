@@ -30,10 +30,22 @@ int main(int argc, char* argv[])
 		{
 			switch (event.type)
 			{
-				case SDL_QUIT:
-					goto END_SDL;
-				default:
+			case SDL_MOUSEBUTTONDOWN: {
+
+				if (event.button.button != SDL_BUTTON_RIGHT)
 					break;
+
+				int x, y;
+				SDL_GetMouseState(&x, &y);
+
+				std::cout << x << ' ' << y << '\n';
+
+				break;
+			}
+			case SDL_QUIT:
+				goto END_SDL;
+			default:
+				break;
 			}
 		}
 
