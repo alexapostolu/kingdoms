@@ -13,12 +13,11 @@ namespace sdl2
 
 struct SDL_Deleter
 {
-	void operator()(SDL_Window*   ptr) { if (ptr) SDL_DestroyWindow(ptr); }
-	void operator()(SDL_Renderer* ptr) { if (ptr) SDL_DestroyRenderer(ptr); }
-	void operator()(SDL_Surface*  ptr) { if (ptr) SDL_FreeSurface(ptr); }
-	void operator()(SDL_Texture*  ptr) { if (ptr) SDL_DestroyTexture(ptr); }
-
-	void operator()(TTF_Font* ptr) { if (ptr) TTF_CloseFont(ptr); }
+	void operator()(SDL_Window* ptr);
+	void operator()(SDL_Renderer* ptr);
+	void operator()(SDL_Surface* ptr);
+	void operator()(SDL_Texture* ptr);
+	void operator()(TTF_Font* ptr);
 };
 
 using window_ptr = std::unique_ptr<SDL_Window, SDL_Deleter>;
@@ -39,6 +38,7 @@ enum class TTF_Align
 };
 
 std::string const str_brygada = "../assets/brygada.ttf";
+std::string const str_grass = "../assets/grass.png";
 SDL_Color const clr_black{ 0, 0, 0, 255 };
 SDL_Color const clr_yellow{ 255, 239, 0, 255 };
 SDL_Color const clr_white{ 255, 255, 255, 255 };

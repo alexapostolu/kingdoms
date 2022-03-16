@@ -38,10 +38,12 @@ int main(int argc, char* argv[])
 		}
 
 		Screen::get().clear();
+
 		
 
 		Base::get().display_resources();
 		Base::get().display_shop();
+
 
 
 		Screen::get().update();

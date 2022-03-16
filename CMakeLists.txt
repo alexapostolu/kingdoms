@@ -13,4 +13,5 @@ add_executable(kingdom ${SOURCES})
 
 target_link_libraries(kingdom "${CMAKE_SOURCE_DIR}/build/SDL2.lib"
 							  "${CMAKE_SOURCE_DIR}/build/SDL2main.lib"
-							  "${CMAKE_SOURCE_DIR}/build/SDL2_ttf.lib")
+							  "${CMAKE_SOURCE_DIR}/build/SDL2_ttf.lib"
+							  "${CMAKE_SOURCE_DIR}/build/SDL2_image.lib")
