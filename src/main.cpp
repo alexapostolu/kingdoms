@@ -23,8 +23,20 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	int b = SDL_GetTicks();
 	while (true)
 	{
+	    int d = SDL_GetTicks() - b;
+	    std::cout << d
+		
+
+	    if (delta > 1000/60.0)
+	    {
+		std::cout << "fps: " << 1000 / d << '\n';
+	        b = SDL_GetTicks();
+	    }
+		
+		
 		Screen::get().clear();
 
 		SDL_Event event;
