@@ -92,6 +92,6 @@ void Screen::image(std::string const& file, int x, int y, int width, int height)
 	if (!image)
 		std::cout << "[error]\n" << IMG_GetError() << '\n';
 
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer.get(), image.get());
-	SDL_RenderCopy(renderer.get(), texture, NULL, &grass_rect);
+	sdl2::texture_ptr texture(SDL_CreateTextureFromSurface(renderer.get(), image.get()));
+	SDL_RenderCopy(renderer.get(), texture.get(), NULL, &grass_rect);
 }

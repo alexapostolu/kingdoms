@@ -13,13 +13,20 @@ public:
     void display_resources();
     void display_shop();
 
+    bool mouse_on_shop(int x, int y);
+
 public:
 	int gold, wheat, wood, stone, gems;
 	int level, exp, troph;
+    bool edit_mode;
+    enum class ShopState
+    {
+        HIDDEN,
+        VISIBLE,
+        APPEARING,
+        DISAPPEARING
+    } shop_state;
 
 private:
     Base();
-
-private:
-    bool edit_mode, shop_visible;
 };

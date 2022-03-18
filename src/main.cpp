@@ -25,20 +25,26 @@ int main(int argc, char* argv[])
 
 	while (true)
 	{
+		Screen::get().clear();
+
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
 			switch (event.type)
 			{
 			case SDL_MOUSEBUTTONDOWN: {
-
-				if (event.button.button != SDL_BUTTON_RIGHT)
+				if (event.button.button != SDL_BUTTON_LEFT)
 					break;
 
 				int x, y;
 				SDL_GetMouseState(&x, &y);
 
-				std::cout << x << ' ' << y << '\n';
+				std::cout << "mouse pos: " << x << ' ' << y << '\n';
+
+				if (Base::get().mouse_on_shop(x, y))
+				{
+					Base::get().shop_state = Base::ShopState::APPEARING;
+				}
 
 				break;
 			}
@@ -48,8 +54,6 @@ int main(int argc, char* argv[])
 				break;
 			}
 		}
-
-		Screen::get().clear();
 
 		
 
