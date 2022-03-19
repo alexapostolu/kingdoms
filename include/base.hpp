@@ -13,7 +13,7 @@ public:
     void display_resources();
     void display_shop();
 
-    bool mouse_on_shop(int x, int y);
+    void handle_mouse_on_shop(int x, int y);
 
 public:
 	int gold, wheat, wood, stone, gems;

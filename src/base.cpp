@@ -59,22 +59,20 @@ void Base::display_resources()
 void Base::display_shop()
 {
 	static int shop_x = Screen::get().SCREEN_HEIGHT;
-	const int shop_h = 100;
+	const int shop_h = 300;
 
 	switch (shop_state)
 	{
 	case ShopState::HIDDEN: {
 		Screen::get().text("BUILD", sdl2::clr_white, sdl2::str_brygada, 45,
-			20, Screen::get().SCREEN_HEIGHT - 65, sdl2::TTF_Align::RIGHT);
+			Screen::get().SCREEN_WIDTH - 20, Screen::get().SCREEN_HEIGHT - 65, sdl2::TTF_Align::RIGHT);
+
 		break;
 	}
 	case ShopState::APPEARING: {
-		Screen::get().text("BUILD", sdl2::clr_white, sdl2::str_brygada, 45,
-			20, Screen::get().SCREEN_HEIGHT - 65, sdl2::TTF_Align::RIGHT);
-
 		Screen::get().rect(0, shop_x, Screen::get().SCREEN_WIDTH, shop_h, sdl2::clr_black);
 
-		shop_x -= 5;
+		shop_x -= 7;
 		if (shop_x == Screen::get().SCREEN_HEIGHT - shop_h)
 		{
 			shop_state = ShopState::VISIBLE;
@@ -83,11 +81,20 @@ void Base::display_shop()
 
 		break;
 	}
+	case ShopState::VISIBLE: {
+		Screen::get().rect(0, Screen::get().SCREEN_HEIGHT - shop_h, Screen::get().SCREEN_WIDTH, shop_h, sdl2::clr_black);
+
+		Screen::get().text("CLOSE", sdl2::clr_white, sdl2::str_brygada, 35,
+			Screen::get().SCREEN_WIDTH - 20, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::TTF_Align::RIGHT);
+		break;
+	}
 	}
 }
 
-bool Base::mouse_on_shop(int x, int y)
+void Base::handle_mouse_on_shop(int x, int y)
 {
-	return shop_state == ShopState::HIDDEN &&
-		x >= 1010 && x <= 1145 && y >= 470 && y <= 500;
+	if (shop_state == ShopState::HIDDEN && x >= 1010 && x <= 1145 && y >= 470 && y <= 500)
+		shop_state = ShopState::APPEARING;
+	else if (shop_state == ShopState::VISIBLE && x >= 1055 && x <= 1165 && y >= 190 && y <= 220)
+		shop_state = ShopState::DISAPPEARING;
 }

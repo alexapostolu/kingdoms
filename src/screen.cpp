@@ -27,6 +27,8 @@ Screen::Screen()
 	}
 
 	SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
+
+	image_store("grass.png");
 }
 
 void Screen::update()
@@ -36,14 +38,11 @@ void Screen::update()
 
 void Screen::clear()
 {
-	SDL_SetRenderDrawColor(renderer.get(), 120, 255, 0, 255);
-	SDL_RenderClear(renderer.get());
-
 	int fw = SCREEN_WIDTH / 5, fh = SCREEN_HEIGHT / 2;
 	for (int i = 0; i < 5; ++i)
 	{
 		for (int j = 0; j < 2; ++j)
-			Screen::get().image("../assets/grass.png", i * fw, j * fh, fw + 1, fh + 1);
+			image_display("grass.png", i * fw, j * fh, fw + 1, fh + 1);
 	}
 }
 
@@ -76,7 +75,7 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 		text_rect.y = y;
 		break;
 	case sdl2::TTF_Align::RIGHT:
-		text_rect.x = (SCREEN_WIDTH - text_rect.w) - x;
+		text_rect.x = x - (text_rect.w);
 		text_rect.y = y;
 		break;
 	};
@@ -84,14 +83,17 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 	SDL_RenderCopy(renderer.get(), text_texture.get(), NULL, &text_rect);
 }
 
-void Screen::image(std::string const& file, int x, int y, int width, int height)
+void Screen::image_store(std::string const& img)
 {
-	SDL_Rect grass_rect{ x, y, width, height };
+	sdl2::surface_ptr image(IMG_Load(std::string("../assets/" + img).c_str()));
+	if (image == nullptr)
+		std::cout << "[error] - image " + img + " could not load\n";
 
-	sdl2::surface_ptr image(IMG_Load(file.c_str()));
-	if (!image)
-		std::cout << "[error]\n" << IMG_GetError() << '\n';
+	images[img] = sdl2::texture_ptr(SDL_CreateTextureFromSurface(renderer.get(), image.get()));
+}
 
-	sdl2::texture_ptr texture(SDL_CreateTextureFromSurface(renderer.get(), image.get()));
-	SDL_RenderCopy(renderer.get(), texture.get(), NULL, &grass_rect);
+void Screen::image_display(std::string const& img, int x, int y, int w, int h)
+{
+	SDL_Rect rect{ x, y, w, h };
+	SDL_RenderCopy(renderer.get(), images[img].get(), NULL, &rect);
 }

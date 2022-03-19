@@ -23,17 +23,17 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	int b = SDL_GetTicks();
+	int b = SDL_GetTicks(), c = 0;
 	while (true)
 	{
-	    int d = SDL_GetTicks() - b;
-	    std::cout << d
+		c++;
 		
 
-	    if (delta > 1000/60.0)
+	    if (SDL_GetTicks() - b > 1000)
 	    {
-		std::cout << "fps: " << 1000 / d << '\n';
+			std::cout << "fps: " << c << '\n';
 	        b = SDL_GetTicks();
+			c = 0;
 	    }
 		
 		
@@ -53,10 +53,7 @@ int main(int argc, char* argv[])
 
 				std::cout << "mouse pos: " << x << ' ' << y << '\n';
 
-				if (Base::get().mouse_on_shop(x, y))
-				{
-					Base::get().shop_state = Base::ShopState::APPEARING;
-				}
+				Base::get().handle_mouse_on_shop(x, y);
 
 				break;
 			}
