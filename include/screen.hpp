@@ -27,6 +27,8 @@ public:
 	void clear();
 
 	void rect(int x, int y, int width, int height, SDL_Color colour);
+	void circle(int x, int y, int r);
+
 	// x, y is where the text starts, align is the direction of how the text is written
 	void text(std::string const& text, SDL_Color const& colour, std::string const& font, int size,
 		int x, int y, sdl2::TTF_Align alignment);

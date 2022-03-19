@@ -54,6 +54,43 @@ void Screen::rect(int x, int y, int width, int height, SDL_Color clr)
 	SDL_RenderFillRect(renderer.get(), &rect);
 }
 
+void Screen::circle(int center_x, int center_y, int r)
+{
+	const int diameter = r * 2;
+
+	int x = r - 1;
+	int y = 0;
+	int tx = 1;
+	int ty = 1;
+	int error = tx - diameter;
+
+	while (x >= y)
+	{
+		SDL_RenderDrawPoint(renderer.get(), center_x + x, center_y - y);
+		SDL_RenderDrawPoint(renderer.get(), center_x + x, center_y + y);
+		SDL_RenderDrawPoint(renderer.get(), center_x - x, center_y - y);
+		SDL_RenderDrawPoint(renderer.get(), center_x - x, center_y + y);
+		SDL_RenderDrawPoint(renderer.get(), center_x + y, center_y - x);
+		SDL_RenderDrawPoint(renderer.get(), center_x + y, center_y + x);
+		SDL_RenderDrawPoint(renderer.get(), center_x - y, center_y - x);
+		SDL_RenderDrawPoint(renderer.get(), center_x - y, center_y + x);
+
+		if (error <= 0)
+		{
+			++y;
+			error += ty;
+			ty += 2;
+		}
+
+		if (error > 0)
+		{
+			--x;
+			tx += 2;
+			error += (tx - diameter);
+		}
+	}
+}
+
 void Screen::text(std::string const& text, SDL_Color const& colour, std::string const& font, int size,
 	int x, int y, sdl2::TTF_Align alignment)
 {

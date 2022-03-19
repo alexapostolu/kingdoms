@@ -58,8 +58,9 @@ void Base::display_resources()
 
 void Base::display_shop()
 {
-	static int shop_x = Screen::get().SCREEN_HEIGHT;
+	static int shop_y = Screen::get().SCREEN_HEIGHT;
 	const int shop_h = 300;
+	const int shop_spd = 15;
 
 	switch (shop_state)
 	{
@@ -70,13 +71,13 @@ void Base::display_shop()
 		break;
 	}
 	case ShopState::APPEARING: {
-		Screen::get().rect(0, shop_x, Screen::get().SCREEN_WIDTH, shop_h, sdl2::clr_black);
+		Screen::get().rect(0, shop_y, Screen::get().SCREEN_WIDTH, shop_h, sdl2::clr_black);
 
-		shop_x -= 7;
-		if (shop_x == Screen::get().SCREEN_HEIGHT - shop_h)
+		shop_y -= shop_spd;
+		if (shop_y <= Screen::get().SCREEN_HEIGHT - shop_h)
 		{
 			shop_state = ShopState::VISIBLE;
-			shop_x = Screen::get().SCREEN_HEIGHT - shop_h;
+			shop_y = Screen::get().SCREEN_HEIGHT - shop_h;
 		}
 
 		break;
@@ -85,7 +86,20 @@ void Base::display_shop()
 		Screen::get().rect(0, Screen::get().SCREEN_HEIGHT - shop_h, Screen::get().SCREEN_WIDTH, shop_h, sdl2::clr_black);
 
 		Screen::get().text("CLOSE", sdl2::clr_white, sdl2::str_brygada, 35,
-			Screen::get().SCREEN_WIDTH - 20, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::TTF_Align::RIGHT);
+			Screen::get().SCREEN_WIDTH - 15, Screen::get().SCREEN_HEIGHT - shop_h - 40, sdl2::TTF_Align::RIGHT);
+
+		break;
+	}
+	case ShopState::DISAPPEARING: {
+		Screen::get().rect(0, shop_y, Screen::get().SCREEN_WIDTH, shop_h, sdl2::clr_black);
+
+		shop_y += shop_spd;
+		if (shop_y >= Screen::get().SCREEN_HEIGHT)
+		{
+			shop_state = ShopState::HIDDEN;
+			shop_y = Screen::get().SCREEN_HEIGHT;
+		}
+
 		break;
 	}
 	}
