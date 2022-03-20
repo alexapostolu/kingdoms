@@ -67,6 +67,7 @@ int main(int argc, char* argv[])
 		
 
 		Base::get().display_resources();
+		Base::get().display_scene();
 		Base::get().display_shop();
 
 

@@ -1,9 +1,15 @@
 #include "base.hpp"
 #include "screen.hpp"
+#include "person.hpp"
+#include "tile.hpp"
 #include "sdl2.hpp"
 
+#include <cassert>
 #include <iostream>
+#include <iomanip>
+#include <random>
 #include <string>
+#include <vector>
 
 Base& Base::get()
 {
@@ -15,9 +21,12 @@ Base::Base()
 	: gold(750), wheat(250), wood(500), stone(0), gems(10)
 	, level(1), exp(0), troph(0)
 	, edit_mode(false), shop_state(ShopState::HIDDEN)
-
+	, TILES_X(200), TILES_Y(200)
+	, tiles(TILES_Y, std::vector<Tile>(TILES_X, Tile{ TileState::GRASS }))
 {
-	
+	Screen::get().image_store("farmer.png");
+
+	farmers.push_back({ TILES_X / 2.f, TILES_Y / 2.f });
 }
 
 void Base::display_resources()
@@ -54,6 +63,33 @@ void Base::display_resources()
 
 	Screen::get().text(gems, sdl2::clr_yellow, sdl2::str_brygada, 24,
 		pos[3] + margin, 10, sdl2::TTF_Align::LEFT);
+}
+
+void Base::display_scene()
+{
+	float spd = 0.2f;
+
+	for (auto& farmer : farmers)
+	{
+		Screen::get().image_display("farmer.png", (int)(farmer.x * 2) + 100, (int)(farmer.y * 2) + 100, 100, 60);
+
+		if (farmer.path.empty())
+			farmer.generate_path(tiles);
+
+		auto const& dest = farmer.path.back();
+		float const epslion = 0.01f;
+
+		if (std::fabs(farmer.x - dest.x) < epslion && std::fabs(farmer.y - dest.y) < epslion)
+			farmer.path.pop_back();
+		else if (farmer.x - dest.x > epslion)
+			farmer.x -= spd;
+		else if (dest.x - farmer.x > epslion)
+			farmer.x += spd;
+		else if (farmer.y - dest.y > epslion)
+			farmer.y -= spd;
+		else if (dest.y - farmer.y > epslion)
+			farmer.y += spd;
+	}
 }
 
 void Base::display_shop()
