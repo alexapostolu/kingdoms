@@ -5,14 +5,14 @@
 #include <SDL.h>
 
 #include <random>
-#include <vector>
+#include <deque>
 
 struct Person
 {
     void generate_path(std::vector<std::vector<Tile>> const& tiles);
 
     float x, y;
-    std::vector<SDL_FPoint> path;
+    std::deque<SDL_FPoint> path;
 
     static std::random_device dev;
     static std::mt19937 eng;

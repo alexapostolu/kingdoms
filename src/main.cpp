@@ -23,19 +23,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	int b = SDL_GetTicks(), c = 0;
+	int b = SDL_GetTicks(), frames = 0;
 	while (true)
 	{
-		c++;
-		
-
+		frames++;
 	    if (SDL_GetTicks() - b > 1000)
 	    {
-			std::cout << "fps: " << c << '\n';
+			//std::cout << "fps: " << frames << '\n';
 	        b = SDL_GetTicks();
-			c = 0;
+			frames = 0;
 	    }
-		
 		
 		Screen::get().clear();
 

@@ -76,11 +76,11 @@ void Base::display_scene()
 		if (farmer.path.empty())
 			farmer.generate_path(tiles);
 
-		auto const& dest = farmer.path.back();
+		auto const& dest = farmer.path[0];
 		float const epslion = 0.01f;
 
 		if (std::fabs(farmer.x - dest.x) < epslion && std::fabs(farmer.y - dest.y) < epslion)
-			farmer.path.pop_back();
+			farmer.path.pop_front();
 		else if (farmer.x - dest.x > epslion)
 			farmer.x -= spd;
 		else if (dest.x - farmer.x > epslion)
