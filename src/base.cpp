@@ -95,12 +95,23 @@ void Base::display_scene()
 			farmer.y += spd;
 	}
 
+	for (std::size_t i = 1; i < buildings.size(); ++i)
+	{
+		if (i == place)
+			continue;
+
+		auto const& [img, pos] = buildings[i];
+		Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
+	}
+
 	if (place != -1)
 	{
-		auto [img, pos] = buildings[place];
+		auto& [img, pos] = buildings[place];
 		int x, y;
 		SDL_GetMouseState(&x, &y);
-		Screen::get().image_display(img, x, y, pos[2], pos[3]);
+		pos[0] = x;
+		pos[1] = y;
+		Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
 	}
 }
 
@@ -140,6 +151,7 @@ void Base::display_shop()
 		{
 			auto const& [img, pos] = building;
 			Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
+			break;
 		}
 
 		break;
@@ -161,10 +173,17 @@ void Base::display_shop()
 
 void Base::handle_mouse_on_shop(int x, int y)
 {
-	if (shop_state == ShopState::HIDDEN && x >= 1010 && x <= 1145 &&
-		y >= 470 && y <= 500)
+	if (shop_state == ShopState::HIDDEN)
 	{
-		shop_state = ShopState::APPEARING;
+		if (x >= 1010 && x <= 1145 && y >= 470 && y <= 500)
+		{
+			place = -1;
+			shop_state = ShopState::APPEARING;
+		}
+		else if (place != -1)
+		{
+			place = -1;
+		}
 	}
 	else if (shop_state == ShopState::VISIBLE)
 	{
@@ -174,18 +193,15 @@ void Base::handle_mouse_on_shop(int x, int y)
 			return;
 		}
 		
-		for (auto const& building : buildings)
+		auto const& [img, pos] = buildings[0];
+		if (x >= pos[0] && x <= pos[0] + pos[2] &&
+			y >= pos[1] && y <= pos[1] + pos[3])
 		{
-			auto const& [img, pos] = building;
-			if (x >= pos[0] && x <= pos[0] + pos[2] &&
-				y >= pos[1] && y <= pos[1] + pos[3])
-			{
-				buildings.push_back({ img, pos });
-				place = buildings.size() - 1;
+			buildings.push_back({ img, { pos[0], pos[1], (int)(pos[2] / 1.5), (int)(pos[3] / 1.5) } });
+			place = buildings.size() - 1;
 
-				shop_state = ShopState::HIDDEN;
-				return;
-			}
+			shop_state = ShopState::HIDDEN;
+			return;
 		}
 	}
 }
