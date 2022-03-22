@@ -11,7 +11,8 @@ include_directories("assets/SDL" "include")
 file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR} src/*.cpp)
 add_executable(kingdom ${SOURCES})
 
-target_link_libraries(kingdom "${CMAKE_SOURCE_DIR}/build/SDL2.lib"
-							  "${CMAKE_SOURCE_DIR}/build/SDL2main.lib"
+target_link_libraries(kingdom "${CMAKE_SOURCE_DIR}/build/SDL2main.lib"
+							  "${CMAKE_SOURCE_DIR}/build/SDL2.lib"
 							  "${CMAKE_SOURCE_DIR}/build/SDL2_ttf.lib"
-							  "${CMAKE_SOURCE_DIR}/build/SDL2_image.lib")
+							  "${CMAKE_SOURCE_DIR}/build/SDL2_image.lib"
+					  -static)

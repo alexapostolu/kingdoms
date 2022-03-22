@@ -44,4 +44,7 @@ private:
 
     std::vector<std::vector<Tile>> tiles;
     std::vector<Person> farmers;
+    std::vector<std::pair<std::string, std::vector<int> > > buildings;
+    // building being placed
+    int place;
 };
