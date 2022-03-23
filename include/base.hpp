@@ -19,7 +19,7 @@ public:
 
 public:
     void display_resources();
-    void display_scene();
+	void display_scene();
     void display_shop();
 
     void handle_mouse_on_shop(int x, int y);
@@ -27,7 +27,7 @@ public:
 public:
 	int gold, wheat, wood, stone, gems;
 	int level, exp, troph;
-    bool edit_mode;
+	bool edit_mode;
 
     int const TILES_X, TILES_Y;
 
