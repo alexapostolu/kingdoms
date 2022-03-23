@@ -23,6 +23,8 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	SDL_PumpEvents();
+
 	int b = SDL_GetTicks(), frames = 0;
 	while (true)
 	{
@@ -51,7 +53,7 @@ int main(int argc, char* argv[])
 				std::cout << "mouse pos: " << x << ' ' << y << '\n';
 
 				Base::get().handle_mouse_on_shop(x, y);
-
+				
 				break;
 			}
 			case SDL_QUIT:

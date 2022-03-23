@@ -21,16 +21,18 @@ Base::Base()
 	: gold(750), wheat(250), wood(500), stone(0), gems(10)
 	, level(1), exp(0), troph(0)
 	, edit_mode(false), shop_state(ShopState::HIDDEN)
-	, TILES_X(200), TILES_Y(200)
+	, TILES_X(58), TILES_Y(23)
 	, tiles(TILES_Y, std::vector<Tile>(TILES_X, Tile{ TileState::GRASS }))
 	, place(-1)
 {
 	Screen::get().image_store("farmer.png");
 	Screen::get().image_store("farmhouse.png");
+	Screen::get().image_store("lumbermill.png");
 
-	farmers.push_back({ TILES_X / 2.f, TILES_Y / 2.f });
+	farmers.push_back(Person{ { TILES_X / 2, TILES_Y / 2 }, { TILES_X / 2.f * 20 + 5, TILES_Y / 2.f * 20 + 60 } });
 
-	buildings.push_back({ "farmhouse.png", { 20, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 200 } });
+	shop_buildings.push_back({ "farmhouse.png", { 20, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 170 } });
+	shop_buildings.push_back({ "lumbermill.png", { 350, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 170 } });
 }
 
 void Base::display_resources()
@@ -71,42 +73,63 @@ void Base::display_resources()
 
 void Base::display_scene()
 {
-	float spd = 0.2f;
+	float spd = 0.5f;
+	static int step_size = 20 / spd;
 
 	for (auto& farmer : farmers)
 	{
-		Screen::get().image_display("farmer.png", (int)(farmer.x * 2) + 100, (int)(farmer.y * 2) + 100, 100, 60);
+		Screen::get().image_display("farmer.png",
+			(int)farmer.actual_pos.x, (int)farmer.actual_pos.y, 100, 60);
 
 		if (farmer.path.empty())
 			farmer.generate_path(tiles);
 
 		auto const& dest = farmer.path[0];
-		float const epslion = 0.01f;
-
-		if (std::fabs(farmer.x - dest.x) < epslion && std::fabs(farmer.y - dest.y) < epslion)
+		if (step_size == 0)
+		{
+			farmer.path_pos = farmer.path[0];
 			farmer.path.pop_front();
-		else if (farmer.x - dest.x > epslion)
-			farmer.x -= spd;
-		else if (dest.x - farmer.x > epslion)
-			farmer.x += spd;
-		else if (farmer.y - dest.y > epslion)
-			farmer.y -= spd;
-		else if (dest.y - farmer.y > epslion)
-			farmer.y += spd;
+
+			step_size = 20 / spd;
+		}
+		else
+		{
+			if (farmer.path_pos.x < dest.x)
+				farmer.actual_pos.x += spd;
+			else if (farmer.path_pos.x > dest.x)
+				farmer.actual_pos.x -= spd;
+			else if (farmer.path_pos.y < dest.y)
+				farmer.actual_pos.y += spd;
+			else if (farmer.path_pos.y > dest.y)
+				farmer.actual_pos.y -= spd;
+
+			step_size--;
+		}
 	}
 
-	for (std::size_t i = 1; i < buildings.size(); ++i)
+	// show grid
+	/*
+	for (int i = 0; i < tiles.size(); ++i)
+	{
+		for (int j = 0; j < tiles[i].size(); ++j)
+		{
+			Screen::get().rect(j * 20 + 5, i * 20 + 60, 20, 20, sdl2::clr_black);
+		}
+	}
+	*/
+
+	for (std::size_t i = 0; i < base_buildings.size(); ++i)
 	{
 		if (i == place)
 			continue;
 
-		auto const& [img, pos] = buildings[i];
+		auto const& [img, pos] = base_buildings[i];
 		Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
 	}
 
 	if (place != -1)
 	{
-		auto& [img, pos] = buildings[place];
+		auto& [img, pos] = base_buildings[place];
 		int x, y;
 		SDL_GetMouseState(&x, &y);
 		pos[0] = x;
@@ -127,6 +150,7 @@ void Base::display_shop()
 		Screen::get().text("BUILD", sdl2::clr_white, sdl2::str_brygada, 45,
 			Screen::get().SCREEN_WIDTH - 20, Screen::get().SCREEN_HEIGHT - 65, sdl2::TTF_Align::RIGHT);
 
+		shop_y = Screen::get().SCREEN_HEIGHT;
 		break;
 	}
 	case ShopState::APPEARING: {
@@ -147,11 +171,10 @@ void Base::display_shop()
 		Screen::get().text("CLOSE", sdl2::clr_white, sdl2::str_brygada, 35,
 			Screen::get().SCREEN_WIDTH - 15, shop_h - 40, sdl2::TTF_Align::RIGHT);
 
-		for (auto const& building : buildings)
+		for (auto const& building : shop_buildings)
 		{
 			auto const& [img, pos] = building;
 			Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
-			break;
 		}
 
 		break;
@@ -193,15 +216,18 @@ void Base::handle_mouse_on_shop(int x, int y)
 			return;
 		}
 		
-		auto const& [img, pos] = buildings[0];
-		if (x >= pos[0] && x <= pos[0] + pos[2] &&
-			y >= pos[1] && y <= pos[1] + pos[3])
+		for (auto const& building : shop_buildings)
 		{
-			buildings.push_back({ img, { pos[0], pos[1], (int)(pos[2] / 1.5), (int)(pos[3] / 1.5) } });
-			place = buildings.size() - 1;
+			auto const& [img, pos] = building;
+			if (x >= pos[0] && x <= pos[0] + pos[2] &&
+				y >= pos[1] && y <= pos[1] + pos[3])
+			{
+				base_buildings.push_back({ img, { pos[0], pos[1], (int)(pos[2] / 1.5), (int)(pos[3] / 1.5) } });
+				place = base_buildings.size() - 1;
 
-			shop_state = ShopState::HIDDEN;
-			return;
+				shop_state = ShopState::HIDDEN;
+				return;
+			}
 		}
 	}
 }

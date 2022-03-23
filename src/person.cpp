@@ -10,8 +10,8 @@
 
 void Person::generate_path(std::vector<std::vector<Tile>> const& tiles)
 {
-	int destx = x, desty = y;
-	while (destx == x && desty == y)
+	int destx = path_pos.x, desty = path_pos.y;
+	while (destx == path_pos.x && desty == path_pos.y)
 	{
 		destx = distrx(eng);
 		desty = distry(eng);
@@ -29,8 +29,8 @@ void Person::generate_path(std::vector<std::vector<Tile>> const& tiles)
 				continue;
 			}
 
-			int g_cost = abs(j - (int)x) + abs(i - (int)y);
-			int h_cost = abs(destx - (int)x) + abs(destx - (int)y);
+			int g_cost = abs(j - (int)path_pos.x) + abs(i - (int)path_pos.y);
+			int h_cost = abs(destx - (int)path_pos.x) + abs(destx - (int)path_pos.y);
 			costs[i][j] = g_cost + h_cost;
 		}
 	}
@@ -41,7 +41,7 @@ void Person::generate_path(std::vector<std::vector<Tile>> const& tiles)
 						std::vector<std::vector<SDL_Point>>,
 						decltype(cmp)> pq(cmp);
 
-	pq.push({ SDL_Point{ (int)x, (int)y } });
+	pq.push({ SDL_Point{ (int)path_pos.x, (int)path_pos.y } });
 	while (!pq.empty())
 	{
 		auto points = pq.top();
@@ -56,7 +56,7 @@ void Person::generate_path(std::vector<std::vector<Tile>> const& tiles)
 		if (cx == destx && cy == desty)
 		{
 			for (auto const& v : points)
-				path.push_back({ (float)v.x, (float)v.y });
+				path.push_back({ v.x, v.y });
 
 			return;
 		}
@@ -84,8 +84,6 @@ void Person::generate_path(std::vector<std::vector<Tile>> const& tiles)
 		}
 	}
 
-	std::cout << "stop\n";
-	return;
 	generate_path(tiles);
 }
 

@@ -44,7 +44,8 @@ private:
 
     std::vector<std::vector<Tile>> tiles;
     std::vector<Person> farmers;
-    std::vector<std::pair<std::string, std::vector<int> > > buildings;
-    // building being placed
+    std::vector<std::pair<std::string, std::vector<int>> > shop_buildings;
+    std::vector<std::pair<std::string, std::vector<int>> > base_buildings;
+    // index of building being placed
     int place;
 };

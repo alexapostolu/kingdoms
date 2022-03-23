@@ -11,8 +11,9 @@ struct Person
 {
     void generate_path(std::vector<std::vector<Tile>> const& tiles);
 
-    float x, y;
-    std::deque<SDL_FPoint> path;
+    SDL_Point path_pos;
+    SDL_FPoint actual_pos;
+    std::deque<SDL_Point> path;
 
     static std::random_device dev;
     static std::mt19937 eng;
