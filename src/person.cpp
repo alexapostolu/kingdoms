@@ -35,8 +35,11 @@ void Person::generate_path(std::vector<std::vector<Tile>> const& tiles)
 		}
 	}
 
-	auto cmp = [&](std::vector<SDL_Point> const& a, std::vector<SDL_Point> const& b)
-		{ return costs[a.back().y][a.back().x] < costs[b.back().y][b.back().x]; };
+	auto cmp = [&](std::vector<SDL_Point> const& a, std::vector<SDL_Point> const& b) {
+			return costs[a.back().y][a.back().x] - ((tiles[a.back().y][a.back().x].state == TileState::PATH) * 2) <
+				costs[b.back().y][b.back().x] - ((tiles[b.back().y][b.back().x].state == TileState::PATH) * 2);
+		};
+
 	std::priority_queue<std::vector<SDL_Point>,
 						std::vector<std::vector<SDL_Point>>,
 						decltype(cmp)> pq(cmp);

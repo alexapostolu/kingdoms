@@ -26,7 +26,8 @@ public:
 	void update();
 	void clear();
 
-	void rect(int x, int y, int width, int height, SDL_Color colour);
+	void rect(int x, int y, int width, int height, SDL_Color fill);
+	void stroke(int x, int y, int w, int h);
 	void circle(int x, int y, int r);
 
 	// x, y is where the text starts, align is the direction of how the text is written

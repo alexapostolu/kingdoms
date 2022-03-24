@@ -23,9 +23,10 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	SDL_PumpEvents();
+	//SDL_PumpEvents();
 
 	int b = SDL_GetTicks(), frames = 0;
+	bool tutorial = true;
 	while (true)
 	{
 		frames++;
@@ -53,6 +54,7 @@ int main(int argc, char* argv[])
 				std::cout << "mouse pos: " << x << ' ' << y << '\n';
 
 				Base::get().handle_mouse_on_shop(x, y);
+				tutorial = false;
 				
 				break;
 			}
@@ -63,7 +65,14 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		
+		if (tutorial)
+		{
+			Screen::get().rect(100, 80, 850, 200, sdl2::clr_black);
+			Screen::get().stroke(100, 80, 850, 200);
+			Screen::get().text("Welcome to Nighthawk: Kingdoms!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 100, sdl2::TTF_Align::LEFT);
+			Screen::get().text("Here you can build your own kingdom andcollect resources!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 140, sdl2::TTF_Align::LEFT);
+			Screen::get().text("Click the shop button to place your first building, then you are good to go!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 180, sdl2::TTF_Align::LEFT);
+		}
 
 		Base::get().display_resources();
 		Base::get().display_scene();

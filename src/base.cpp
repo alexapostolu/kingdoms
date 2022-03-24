@@ -21,18 +21,20 @@ Base::Base()
 	: gold(750), wheat(250), wood(500), stone(0), gems(10)
 	, level(1), exp(0), troph(0)
 	, edit_mode(false), shop_state(ShopState::HIDDEN)
-	, TILES_X(58), TILES_Y(23)
+	, TILES_X(56), TILES_Y(23)
 	, tiles(TILES_Y, std::vector<Tile>(TILES_X, Tile{ TileState::GRASS }))
 	, place(-1)
 {
 	Screen::get().image_store("farmer.png");
 	Screen::get().image_store("farmhouse.png");
 	Screen::get().image_store("lumbermill.png");
+	Screen::get().image_store("road.png");
 
 	farmers.push_back(Person{ { TILES_X / 2, TILES_Y / 2 }, { TILES_X / 2.f * 20 + 5, TILES_Y / 2.f * 20 + 60 } });
 
-	shop_buildings.push_back({ "farmhouse.png", { 20, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 170 } });
-	shop_buildings.push_back({ "lumbermill.png", { 350, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 170 } });
+	shop_buildings.push_back({ "farmhouse.png", { 20, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 170 }, 100 });
+	shop_buildings.push_back({ "lumbermill.png", { 350, (Screen::get().SCREEN_HEIGHT - 300) + 20, 300, 170 }, 100 });
+	shop_buildings.push_back({ "road.png", { 680, (Screen::get().SCREEN_HEIGHT - 300) + 20, 80, 40 }, 10 });
 }
 
 void Base::display_resources()
@@ -73,6 +75,8 @@ void Base::display_resources()
 
 void Base::display_scene()
 {
+	static int tick = 0;
+
 	float spd = 0.5f;
 	static int step_size = 20 / spd;
 
@@ -107,33 +111,38 @@ void Base::display_scene()
 		}
 	}
 
-	// show grid
-	/*
-	for (int i = 0; i < tiles.size(); ++i)
-	{
-		for (int j = 0; j < tiles[i].size(); ++j)
-		{
-			Screen::get().rect(j * 20 + 5, i * 20 + 60, 20, 20, sdl2::clr_black);
-		}
-	}
-	*/
+	//for (int i = 0; i < tiles.size(); ++i)
+	//{
+	//	for (int j = 0; j < tiles[i].size(); ++j)
+	//	{
+	//		Screen::get().stroke(j * 20 + 5, i * 20 + 60, 20, 20);
+	//	}
+	//}	
 
 	for (std::size_t i = 0; i < base_buildings.size(); ++i)
 	{
 		if (i == place)
 			continue;
 
-		auto const& [img, pos] = base_buildings[i];
+		auto const& [img, pos, cost] = base_buildings[i];
 		Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
+
+		if (img == "lumbermill.png" && tick > 500)
+		{
+			gold++;
+			wood++;
+			tick = 0;
+		}
+		tick++;
 	}
 
 	if (place != -1)
 	{
-		auto& [img, pos] = base_buildings[place];
+		auto& [img, pos, cost] = base_buildings[place];
 		int x, y;
 		SDL_GetMouseState(&x, &y);
-		pos[0] = x;
-		pos[1] = y;
+		pos[0] = x / 20 * 20;
+		pos[1] = y / 20 * 20;
 		Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
 	}
 }
@@ -173,7 +182,7 @@ void Base::display_shop()
 
 		for (auto const& building : shop_buildings)
 		{
-			auto const& [img, pos] = building;
+			auto const& [img, pos, cost] = building;
 			Screen::get().image_display(img, pos[0], pos[1], pos[2], pos[3]);
 		}
 
@@ -205,7 +214,29 @@ void Base::handle_mouse_on_shop(int x, int y)
 		}
 		else if (place != -1)
 		{
-			place = -1;
+			auto const& [img, pos, cost] = base_buildings[place];
+			
+			if (img == "road.png")
+				tiles[(y - 60) / 20][(x - 60) / 20].state = TileState::PATH;
+
+			bool can_place = true;
+			for (int i = (pos[0] - 60) / 20; i < (pos[0] + pos[2] - 60) / 20; ++i)
+			{
+				for (int j = (pos[1] - 60) / 20; j < (pos[1] + pos[3] - 60) / 20; ++j)
+					can_place = tiles[j][i].state != TileState::OCCUPIED;
+			}
+
+			if (can_place)
+			{
+				for (int i = (pos[0] - 60) / 20; i < (pos[0] + pos[2] - 60) / 20; ++i)
+				{
+					for (int j = (pos[1] - 60) / 20; j < (pos[1] + pos[3] - 60) / 20; ++j)
+						tiles[j][i].state = TileState::OCCUPIED;
+				}
+
+				gold -= cost;
+				place = -1;
+			}
 		}
 	}
 	else if (shop_state == ShopState::VISIBLE)
@@ -218,11 +249,11 @@ void Base::handle_mouse_on_shop(int x, int y)
 		
 		for (auto const& building : shop_buildings)
 		{
-			auto const& [img, pos] = building;
+			auto const& [img, pos, cost] = building;
 			if (x >= pos[0] && x <= pos[0] + pos[2] &&
 				y >= pos[1] && y <= pos[1] + pos[3])
 			{
-				base_buildings.push_back({ img, { pos[0], pos[1], (int)(pos[2] / 1.5), (int)(pos[3] / 1.5) } });
+				base_buildings.push_back({ img, { pos[0], pos[1], (int)(pos[2] / 1.5), (int)(pos[3] / 1.5) }, cost });
 				place = base_buildings.size() - 1;
 
 				shop_state = ShopState::HIDDEN;

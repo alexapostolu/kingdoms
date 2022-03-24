@@ -46,14 +46,19 @@ void Screen::clear()
 	}
 }
 
-void Screen::rect(int x, int y, int width, int height, SDL_Color clr)
+void Screen::rect(int x, int y, int width, int height, SDL_Color fill)
 {
 	SDL_Rect rect{ x, y, width, height };
 
-	SDL_SetRenderDrawColor(renderer.get(), clr.r, clr.g, clr.b, 200);
+	SDL_SetRenderDrawColor(renderer.get(), fill.r, fill.g, fill.b, 200);
 	SDL_RenderFillRect(renderer.get(), &rect);
-	//SDL_SetRenderDrawColor(renderer.get(), 255, 255, 255, 200);
-	//SDL_RenderDrawRect(renderer.get(), &rect);
+}
+
+void Screen::stroke(int x, int y, int w, int h)
+{
+	SDL_Rect rect{ x, y, w, h };
+	SDL_SetRenderDrawColor(renderer.get(), 255, 255, 255, 200);
+	SDL_RenderDrawRect(renderer.get(), &rect);
 }
 
 void Screen::circle(int center_x, int center_y, int r)

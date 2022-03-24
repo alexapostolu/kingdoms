@@ -7,6 +7,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <tuple>
 
 class Base
 {
@@ -44,8 +45,8 @@ private:
 
     std::vector<std::vector<Tile>> tiles;
     std::vector<Person> farmers;
-    std::vector<std::pair<std::string, std::vector<int>> > shop_buildings;
-    std::vector<std::pair<std::string, std::vector<int>> > base_buildings;
+    std::vector<std::tuple<std::string, std::vector<int>, int> > shop_buildings;
+    std::vector<std::tuple<std::string, std::vector<int>, int> > base_buildings;
     // index of building being placed
     int place;
 };
