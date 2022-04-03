@@ -1,13 +1,13 @@
 #pragma once
 
-#include "SDL.h"
 #include "person.hpp"
 #include "tile.hpp"
+#include "sdl2.hpp"
+#include <SDL.h>
 
 #include <random>
 #include <string>
 #include <vector>
-#include <tuple>
 
 class Base
 {
@@ -45,8 +45,10 @@ private:
 
     std::vector<std::vector<Tile>> tiles;
     std::vector<Person> farmers;
-    std::vector<std::tuple<std::string, std::vector<int>, int> > shop_buildings;
-    std::vector<std::tuple<std::string, std::vector<int>, int> > base_buildings;
+    std::vector<Building> shop_buildings;
+    std::vector<Building> base_buildings;
     // index of building being placed
     int place;
+
+    sdl2::Text text_build;
 };
