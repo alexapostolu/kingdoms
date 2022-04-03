@@ -1,10 +1,10 @@
-#include <SDL.h>
-#include <SDL_ttf.h>
-
 #include "base.hpp"
 #include "tile.hpp"
 #include "screen.hpp"
 #include "sdl2.hpp"
+
+#include <SDL.h>
+#include <SDL_ttf.h>
 
 #include <iostream>
 #include <memory>
@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 		frames++;
 	    if (SDL_GetTicks() - b > 1000)
 	    {
-			//std::cout << "fps: " << frames << '\n';
+			std::cout << "fps: " << frames << '\n';
 	        b = SDL_GetTicks();
 			frames = 0;
 	    }
@@ -58,6 +58,10 @@ int main(int argc, char* argv[])
 				
 				break;
 			}
+			case SDL_MOUSEBUTTONUP: {
+				//if (time > 0.5) mosue dragged, otherwise mouse pressed
+				break;
+			}
 			case SDL_QUIT:
 				goto END_SDL;
 			default:
@@ -67,11 +71,10 @@ int main(int argc, char* argv[])
 
 		if (tutorial)
 		{
-			Screen::get().rect(100, 80, 850, 200, sdl2::clr_black);
-			Screen::get().stroke(100, 80, 850, 200);
-			Screen::get().text("Welcome to Nighthawk: Kingdoms!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 100, sdl2::TTF_Align::LEFT);
-			Screen::get().text("Here you can build your own kingdom andcollect resources!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 140, sdl2::TTF_Align::LEFT);
-			Screen::get().text("Click the shop button to place your first building, then you are good to go!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 180, sdl2::TTF_Align::LEFT);
+			Screen::get().rect(100, 80, 850, 200, sdl2::clr_black, sdl2::clr_white);
+			Screen::get().text("Welcome to Nighthawk: Kingdoms!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 100, sdl2::Align::LEFT);
+			Screen::get().text("Here you can build your own kingdom andcollect resources!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 140, sdl2::Align::LEFT);
+			Screen::get().text("Click the shop button to place your first building, then you are good to go!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 180, sdl2::Align::LEFT);
 		}
 
 		Base::get().display_resources();

@@ -32,9 +32,23 @@ using font_ptr = std::unique_ptr<TTF_Font, SDL_Deleter>;
 
 // text fonts, colours, and alignment
 
-enum class TTF_Align
+enum class Align
 {
 	LEFT, CENTER, RIGHT
+};
+
+struct Dimension
+{
+	int x, y, w, h;
+};
+
+struct Text
+{
+	Text(int _x, int _y, Align _align);
+	bool clicked_on(int mx, int my);
+
+	Dimension dim;
+	Align align;
 };
 
 std::string const str_brygada = "../assets/brygada.ttf";
