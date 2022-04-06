@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = @CMakeFiles/kingdom.dir/includes_CXX.rsp
 
-CXX_FLAGS = -std=gnu++2a
+CXX_FLAGS = -g -std=gnu++2a
 
