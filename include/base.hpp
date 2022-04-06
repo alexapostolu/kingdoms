@@ -3,6 +3,8 @@
 #include "person.hpp"
 #include "tile.hpp"
 #include "sdl2.hpp"
+#include "building.hpp"
+
 #include <SDL.h>
 
 #include <random>

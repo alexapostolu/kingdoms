@@ -22,8 +22,10 @@ int main(int argc, char* argv[])
 		std::cout << "error - failed to initialize TTF\n" << TTF_GetError();
 		return 1;
 	}
+	
+	Screen::get().set_window();
 
-	//SDL_PumpEvents();
+	SDL_PumpEvents();
 
 	int b = SDL_GetTicks(), frames = 0;
 	bool tutorial = true;
@@ -58,10 +60,6 @@ int main(int argc, char* argv[])
 				
 				break;
 			}
-			case SDL_MOUSEBUTTONUP: {
-				//if (time > 0.5) mosue dragged, otherwise mouse pressed
-				break;
-			}
 			case SDL_QUIT:
 				goto END_SDL;
 			default:
@@ -72,12 +70,17 @@ int main(int argc, char* argv[])
 		if (tutorial)
 		{
 			Screen::get().rect(100, 80, 850, 200, sdl2::clr_black, sdl2::clr_white);
+		}
+
+		Base::get().display_resources();
+
+		if (tutorial)
+		{
 			Screen::get().text("Welcome to Nighthawk: Kingdoms!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 100, sdl2::Align::LEFT);
 			Screen::get().text("Here you can build your own kingdom andcollect resources!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 140, sdl2::Align::LEFT);
 			Screen::get().text("Click the shop button to place your first building, then you are good to go!", sdl2::clr_yellow, sdl2::str_brygada, 24, 120, 180, sdl2::Align::LEFT);
 		}
 
-		Base::get().display_resources();
 		Base::get().display_scene();
 		Base::get().display_shop();
 

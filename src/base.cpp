@@ -2,7 +2,7 @@
 #include "screen.hpp"
 #include "person.hpp"
 #include "tile.hpp"
-#include <building.hpp>
+#include "building.hpp"
 #include "sdl2.hpp"
 
 #include <cassert>
@@ -28,22 +28,24 @@ Base::Base()
 	, place(-1)
 	, text_build(Screen::get().SCREEN_WIDTH - 20, Screen::get().SCREEN_HEIGHT - 65, sdl2::Align::RIGHT)
 {
-	//farmers.push_back(Person{ { TILES_X / 2, TILES_Y / 2 }, { TILES_X / 2.f * 20 + 5, TILES_Y / 2.f * 20 + 60 } });
+	farmers.push_back(Person{ { TILES_X / 2, TILES_Y / 2 }, { TILES_X / 2.f * 20 + 5, TILES_Y / 2.f * 20 + 60 } });
 
-	shop_buildings.push_back({ "farmhouse.png",	 { 200, Screen::get().SCREEN_HEIGHT - 150 + 20, 300, 170 }, 100, 0, 0 });
-	shop_buildings.push_back({ "lumbermill.png", { 450, Screen::get().SCREEN_HEIGHT - 150, 300, 170 },		100, 0, 0 });
-	shop_buildings.push_back({ "road.png",		 { 650, Screen::get().SCREEN_HEIGHT - 150, 80, 40 },		10, 0, 0 });
+	shop_buildings.push_back({ "farmhouse.png",	 { 200, Screen::get().SCREEN_HEIGHT - 150, 300, 170 }, 100, 0, 0 });
+	shop_buildings.push_back({ "lumbermill.png", { 500, Screen::get().SCREEN_HEIGHT - 150, 300, 170 }, 100, 0, 0 });
+	shop_buildings.push_back({ "road.png",		 { 800, Screen::get().SCREEN_HEIGHT - 150, 80, 40 },   10, 0, 0 });
 }
 
 void Base::display_resources()
 {
-	Screen::get().rect(0, 0, Screen::get().SCREEN_WIDTH, 50, sdl2::clr_black, std::nullopt);
-	Screen::get().rect(0, 50, Screen::get().SCREEN_WIDTH, 5, sdl2::clr_yellow, std::nullopt);
+	Screen::get().rect(0, 0, Screen::get().SCREEN_WIDTH, 50, sdl2::clr_black, sdl2::clr_clear);
+	Screen::get().rect(0, 50, Screen::get().SCREEN_WIDTH, 5, sdl2::clr_yellow, sdl2::clr_clear);
 
-	std::string gold = "Gold: " + std::to_string(Base::get().gold);
-	std::string wheat = "Wheat: " + std::to_string(Base::get().wheat);
-	std::string wood = "Wood: " + std::to_string(Base::get().wood);
-	std::string gems = "Gems: " + std::to_string(Base::get().gems);
+	std::string str[] = {
+		"Gold: " + std::to_string(Base::get().gold),
+		"Wheat: " + std::to_string(Base::get().wheat),
+		"Wood: " + std::to_string(Base::get().wood),
+		"Gems: " + std::to_string(Base::get().gems),
+	};
 
 	int pos[] = {
 		0,
@@ -52,23 +54,16 @@ void Base::display_resources()
 		(Screen::get().SCREEN_WIDTH / 4 * 3)
 	};
 
-
 	sdl2::font_ptr ttf_font(TTF_OpenFont(sdl2::str_brygada.c_str(), 24));
 	int text_w, text_h;
-	int s = TTF_SizeText(ttf_font.get(), gems.c_str(), &text_w, &text_h);
+	TTF_SizeText(ttf_font.get(), str[3].c_str(), &text_w, &text_h);
 	int margin = (Screen::get().SCREEN_WIDTH - (Screen::get().SCREEN_WIDTH / 4 * 3 + text_w)) / 2;
 
-	Screen::get().text(gold, sdl2::clr_yellow, sdl2::str_brygada, 24,
-		pos[0] + margin, 10, sdl2::Align::LEFT);
-	
-	Screen::get().text(wheat, sdl2::clr_yellow, sdl2::str_brygada, 24,
-		pos[1] + margin, 10, sdl2::Align::LEFT);
-
-	Screen::get().text(wood, sdl2::clr_yellow, sdl2::str_brygada, 24,
-		pos[2] + margin, 10, sdl2::Align::LEFT);
-
-	Screen::get().text(gems, sdl2::clr_yellow, sdl2::str_brygada, 24,
-		pos[3] + margin, 10, sdl2::Align::LEFT);
+	for (int i = 0; i < sizeof(str) / sizeof(str[0]); ++i)
+	{
+		Screen::get().text(str[i], sdl2::clr_yellow, sdl2::str_brygada, 24,
+			(Screen::get().SCREEN_WIDTH / 4 * i) + margin, 10, sdl2::Align::LEFT);
+	}
 }
 
 void Base::display_scene()
@@ -136,7 +131,7 @@ void Base::display_scene()
 		dim.x = ((x - 5) / 20) * 20;
 		dim.y = (y / 20) * 20;
 
-		Screen::get().rect(dim.x, dim.y, dim.w, dim.h, sdl2::clr_black, std::nullopt);
+		Screen::get().rect(dim.x, dim.y, dim.w, dim.h, sdl2::clr_black, sdl2::clr_clear);
 		Screen::get().image(img, dim.x, dim.y, dim.w, dim.h, sdl2::Align::CENTER);
 
 		int const img_mid = (dim.x + (dim.x + dim.w)) / 2;
@@ -166,14 +161,14 @@ void Base::display_shop()
 			for (int i = 0; i < TILES_Y; ++i)
 			{
 				for (int j = 0; j < TILES_X; ++j)
-					Screen::get().rect((j * 20) + 5, (i * 20) + 60, 20, 20, std::nullopt, sdl2::clr_white);
+					Screen::get().rect((j * 20) + 5, (i * 20) + 60, 20, 20, sdl2::clr_clear, sdl2::clr_white);
 			}
 		}
 
 		break;
 	}
 	case ShopState::APPEARING: {
-		Screen::get().rect(0, shop_y, Screen::get().SCREEN_WIDTH, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::clr_black, std::nullopt);
+		Screen::get().rect(0, shop_y, Screen::get().SCREEN_WIDTH, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::clr_black, sdl2::clr_clear);
 
 		shop_y -= shop_spd;
 		if (shop_y <= shop_h)
@@ -185,7 +180,7 @@ void Base::display_shop()
 		break;
 	}
 	case ShopState::VISIBLE: {
-		Screen::get().rect(0, shop_h, Screen::get().SCREEN_WIDTH, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::clr_black, std::nullopt);
+		Screen::get().rect(0, shop_h, Screen::get().SCREEN_WIDTH, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::clr_black, sdl2::clr_clear);
 
 		Screen::get().text("CLOSE", sdl2::clr_white, sdl2::str_brygada, 35,
 			Screen::get().SCREEN_WIDTH - 15, shop_h - 40, sdl2::Align::RIGHT);
@@ -199,7 +194,7 @@ void Base::display_shop()
 		break;
 	}
 	case ShopState::DISAPPEARING: {
-		Screen::get().rect(0, shop_y, Screen::get().SCREEN_WIDTH, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::clr_black, std::nullopt);
+		Screen::get().rect(0, shop_y, Screen::get().SCREEN_WIDTH, Screen::get().SCREEN_HEIGHT - shop_h, sdl2::clr_black, sdl2::clr_clear);
 
 		shop_y += shop_spd;
 		if (shop_y >= Screen::get().SCREEN_HEIGHT)

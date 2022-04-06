@@ -1,0 +1,3 @@
+C:/dev/repos/nighthawk-kingdoms/build/CMakeFiles/kingdom.dir
+C:/dev/repos/nighthawk-kingdoms/build/CMakeFiles/edit_cache.dir
+C:/dev/repos/nighthawk-kingdoms/build/CMakeFiles/rebuild_cache.dir

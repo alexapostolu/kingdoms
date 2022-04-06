@@ -6,7 +6,6 @@
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 
-#include <optional>
 #include <memory>
 #include <unordered_map>
 
@@ -23,12 +22,13 @@ public:
 	Screen(Screen const&) = delete;
 	void operator=(Screen const&) = delete;
 
+	void set_window();
+
 public:
 	void update();
 	void clear();
 
-	void rect(int x, int y, int w, int h, std::optional<SDL_Color> const& fill,
-		std::optional<SDL_Color> const& stroke);
+	void rect(int x, int y, int w, int h, SDL_Color const& fill, SDL_Color const& stroke);
 	void circle(int x, int y, int r);
 
 	// x, y is where the text starts, align is where the text starts

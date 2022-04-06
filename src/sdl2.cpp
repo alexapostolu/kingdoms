@@ -12,7 +12,6 @@
 namespace sdl2
 {
 
-void SDL_Deleter::operator()(SDL_Window * ptr) { if (ptr) SDL_DestroyWindow(ptr); n_ptr }
 void SDL_Deleter::operator()(SDL_Renderer* ptr) { if (ptr) SDL_DestroyRenderer(ptr); n_ptr }
 void SDL_Deleter::operator()(SDL_Surface* ptr) { if (ptr) SDL_FreeSurface(ptr); n_ptr }
 void SDL_Deleter::operator()(SDL_Texture* ptr) { if (ptr) SDL_DestroyTexture(ptr); n_ptr }
@@ -20,7 +19,7 @@ void SDL_Deleter::operator()(SDL_Texture* ptr) { if (ptr) SDL_DestroyTexture(ptr
 void SDL_Deleter::operator()(TTF_Font* ptr) { if (ptr) TTF_CloseFont(ptr); n_ptr }
 
 Text::Text(int _x, int _y, Align _align)
-	: dim({ _x, _y }), align(_align)
+	: dim({ _x, _y, 0, 0 }), align(_align)
 {
 	TTF_Init();
 
@@ -39,8 +38,12 @@ bool Text::clicked_on(int mx, int my)
 		return mx >= dim.x - (dim.w / 2) && mx <= dim.x + (dim.w / 2) &&
 			   my >= dim.y - (dim.h / 2) && my <= dim.y + (dim.h / 2);
 	case Align::RIGHT:
+		printf("%d %d %d %d %d %d\n", mx, my, dim.x, dim.y, dim.w, dim.h);
 		return mx >= dim.x - dim.w && mx <= dim.x &&
 			   my >= dim.y && my <= dim.y + dim.h;
+	default:
+		std::cout << "error - missing align";
+		return false;
 	}
 }
 

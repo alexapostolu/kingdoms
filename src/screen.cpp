@@ -5,15 +5,14 @@
 #include <SDL_ttf.h>
 
 #include <iostream>
-#include <optional>
 #include <string>
 
-Screen::Screen()
-	: SCREEN_WIDTH(1170), SCREEN_HEIGHT(525)
-	, window(SDL_CreateWindow("Nighthawk - Kingdoms",
-				 SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-				 SCREEN_WIDTH, SCREEN_HEIGHT, 0))
-{	
+void Screen::set_window()
+{
+	window.reset(SDL_CreateWindow("Nighthawk - Kingdoms",
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		1170, 525, 0), [](auto p) { SDL_DestroyWindow(p); });
+
 	if (!window)
 	{
 		std::cout << "error - failed to open window\n" << SDL_GetError();
@@ -30,6 +29,9 @@ Screen::Screen()
 	SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
 }
 
+Screen::Screen()
+	: SCREEN_WIDTH(1170), SCREEN_HEIGHT(525) {}
+
 void Screen::update()
 {
 	SDL_RenderPresent(renderer.get());
@@ -45,21 +47,15 @@ void Screen::clear()
 	}
 }
 
-void Screen::rect(int x, int y, int w, int h,
-	std::optional<SDL_Color> const& fill, std::optional<SDL_Color> const& stroke)
+void Screen::rect(int x, int y, int w, int h, SDL_Color const& fill, SDL_Color const& stroke)
 {
 	SDL_Rect rect{ x, y, w, h };
 
-	if (fill.has_value())
-	{
-		SDL_SetRenderDrawColor(renderer.get(), fill->r, fill->g, fill->b, fill->a);
-		SDL_RenderFillRect(renderer.get(), &rect);
-	}
-	if (stroke.has_value())
-	{
-		SDL_SetRenderDrawColor(renderer.get(), stroke->r, stroke->g, stroke->b, stroke->a);
-		SDL_RenderDrawRect(renderer.get(), &rect);
-	}
+	SDL_SetRenderDrawColor(renderer.get(), fill.r, fill.g, fill.b, fill.a);
+	SDL_RenderFillRect(renderer.get(), &rect);
+
+	SDL_SetRenderDrawColor(renderer.get(), stroke.r, stroke.g, stroke.b, stroke.a);
+	SDL_RenderDrawRect(renderer.get(), &rect);
 }
 
 void Screen::circle(int center_x, int center_y, int r)
@@ -107,7 +103,7 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 	sdl2::texture_ptr text_texture(SDL_CreateTextureFromSurface(renderer.get(), text_surface.get()));
 
 	SDL_Rect text_rect;
-	int s = TTF_SizeText(ttf_font.get(), text.c_str(), &text_rect.w, &text_rect.h);
+	TTF_SizeText(ttf_font.get(), text.c_str(), &text_rect.w, &text_rect.h);
 
 	switch (alignment)
 	{
@@ -123,8 +119,10 @@ void Screen::text(std::string const& text, SDL_Color const& colour, std::string 
 		text_rect.x = x - (text_rect.w);
 		text_rect.y = y;
 		break;
+	default:
+		std::cout << "error - not align\n";
 	};
-
+	
 	SDL_RenderCopy(renderer.get(), text_texture.get(), NULL, &text_rect);
 }
 
@@ -176,16 +174,16 @@ void Screen::image(std::string const& img, sdl2::Dimension const& dim, sdl2::Ali
 	switch (alignment)
 	{
 	case sdl2::Align::LEFT:
-		rect.x = x;
-		rect.y = y;
+		rect.x = dim.x;
+		rect.y = dim.y;
 		break;
 	case sdl2::Align::CENTER:
-		rect.x = x - (w / 2);
-		rect.y = y - (h / 2);
+		rect.x = dim.x - (dim.w / 2);
+		rect.y = dim.y - (dim.h / 2);
 		break;
 	case sdl2::Align::RIGHT:
-		rect.x = x - (w);
-		rect.y = y;
+		rect.x = dim.x - (dim.w);
+		rect.y = dim.y;
 		break;
 	};
 
