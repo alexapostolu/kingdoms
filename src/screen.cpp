@@ -47,9 +47,26 @@ void Screen::clear()
 	}
 }
 
-void Screen::rect(int x, int y, int w, int h, SDL_Color const& fill, SDL_Color const& stroke)
+void Screen::rect(int x, int y, int w, int h, SDL_Color const& fill, SDL_Color const& stroke, sdl2::Align alignment)
 {
-	SDL_Rect rect{ x, y, w, h };
+	SDL_Rect rect{ 0, 0, w, h };
+	switch (alignment)
+	{
+	case sdl2::Align::LEFT:
+		rect.x = x;
+		rect.y = y;
+		break;
+	case sdl2::Align::CENTER:
+		rect.x = x - (rect.w / 2);
+		rect.y = y - (rect.h / 2);
+		break;
+	case sdl2::Align::RIGHT:
+		rect.x = x - (rect.w);
+		rect.y = y;
+		break;
+	default:
+		std::cout << "error - not align\n";
+	};
 
 	SDL_SetRenderDrawColor(renderer.get(), fill.r, fill.g, fill.b, fill.a);
 	SDL_RenderFillRect(renderer.get(), &rect);

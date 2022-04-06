@@ -53,6 +53,7 @@ struct Text
 std::string const str_brygada = "../assets/brygada.ttf";
 SDL_Color const clr_black{ 0, 0, 0, 255 };
 SDL_Color const clr_yellow{ 255, 239, 0, 255 };
+SDL_Color const clr_green{ 60, 220, 0, 150 };
 SDL_Color const clr_white{ 255, 255, 255, 255 };
 SDL_Color const clr_clear{ 0, 0, 0, 0 };
 

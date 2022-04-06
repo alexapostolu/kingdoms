@@ -38,7 +38,6 @@ bool Text::clicked_on(int mx, int my)
 		return mx >= dim.x - (dim.w / 2) && mx <= dim.x + (dim.w / 2) &&
 			   my >= dim.y - (dim.h / 2) && my <= dim.y + (dim.h / 2);
 	case Align::RIGHT:
-		printf("%d %d %d %d %d %d\n", mx, my, dim.x, dim.y, dim.w, dim.h);
 		return mx >= dim.x - dim.w && mx <= dim.x &&
 			   my >= dim.y && my <= dim.y + dim.h;
 	default:
