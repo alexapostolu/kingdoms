@@ -1,0 +1,27 @@
+[
+{
+  "directory": "C:/dev/repos/nighthawk-kingdoms/build",
+  "command": "C:\\dev\\mingw64\\bin\\x86_64-w64-mingw32-g++.exe  @CMakeFiles/kingdom.dir/includes_CXX.rsp -g -std=gnu++2a -o CMakeFiles\\kingdom.dir\\src\\base.cpp.obj -c C:\\dev\\repos\\nighthawk-kingdoms\\src\\base.cpp",
+  "file": "C:/dev/repos/nighthawk-kingdoms/src/base.cpp"
+},
+{
+  "directory": "C:/dev/repos/nighthawk-kingdoms/build",
+  "command": "C:\\dev\\mingw64\\bin\\x86_64-w64-mingw32-g++.exe  @CMakeFiles/kingdom.dir/includes_CXX.rsp -g -std=gnu++2a -o CMakeFiles\\kingdom.dir\\src\\main.cpp.obj -c C:\\dev\\repos\\nighthawk-kingdoms\\src\\main.cpp",
+  "file": "C:/dev/repos/nighthawk-kingdoms/src/main.cpp"
+},
+{
+  "directory": "C:/dev/repos/nighthawk-kingdoms/build",
+  "command": "C:\\dev\\mingw64\\bin\\x86_64-w64-mingw32-g++.exe  @CMakeFiles/kingdom.dir/includes_CXX.rsp -g -std=gnu++2a -o CMakeFiles\\kingdom.dir\\src\\person.cpp.obj -c C:\\dev\\repos\\nighthawk-kingdoms\\src\\person.cpp",
+  "file": "C:/dev/repos/nighthawk-kingdoms/src/person.cpp"
+},
+{
+  "directory": "C:/dev/repos/nighthawk-kingdoms/build",
+  "command": "C:\\dev\\mingw64\\bin\\x86_64-w64-mingw32-g++.exe  @CMakeFiles/kingdom.dir/includes_CXX.rsp -g -std=gnu++2a -o CMakeFiles\\kingdom.dir\\src\\screen.cpp.obj -c C:\\dev\\repos\\nighthawk-kingdoms\\src\\screen.cpp",
+  "file": "C:/dev/repos/nighthawk-kingdoms/src/screen.cpp"
+},
+{
+  "directory": "C:/dev/repos/nighthawk-kingdoms/build",
+  "command": "C:\\dev\\mingw64\\bin\\x86_64-w64-mingw32-g++.exe  @CMakeFiles/kingdom.dir/includes_CXX.rsp -g -std=gnu++2a -o CMakeFiles\\kingdom.dir\\src\\sdl2.cpp.obj -c C:\\dev\\repos\\nighthawk-kingdoms\\src\\sdl2.cpp",
+  "file": "C:/dev/repos/nighthawk-kingdoms/src/sdl2.cpp"
+}
+]
