@@ -4,6 +4,3 @@ out/
 
 # Visual Studio files
 CMakePresets.json
-
-# SDL
-external/SDL2/
