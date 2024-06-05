@@ -1,0 +1,10 @@
+# Visual Studio directories
+.vs/
+out/
+
+# Visual Studio files
+CMakePresets.json
+
+# SDL
+external/SDL2/
+!external/SDL2/lib/x64/SDL2.dll # leave the dll for the user
