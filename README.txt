@@ -2,11 +2,21 @@
 
 A single player kingdom building game. Build your kingdom and gain rewards attacking other kingdoms in the single player campaign.
 
-1. How to Play (Windows only)
-2. How to Build and Run
+If you want to get playing, checkout the [Play](#play) section on how to install (Windows only) and play instantly!
+
+1. [Play (Windows only)](#play)
+2. [Build Source](#build-source)
 3. [About Game](#about-game)
 4. [Other](#other)
 4. [Technical Information](#technical-information)
+
+### Play
+
+Download the executable (`exe`) and the dynamic library `sdl.dll` from the Releases page. Extract the zip folder. Then click on the exectuable file and start playing!
+
+### Build Source
+
+Download, and then run the cmake.
 
 ### About Game
 
