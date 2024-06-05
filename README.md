@@ -1,4 +1,4 @@
-#Kingdoms
+# Kingdoms
 
 A single player kingdom building game. Build your kingdom and gain rewards attacking other kingdoms in the single player campaign.
 
