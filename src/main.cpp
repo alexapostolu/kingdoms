@@ -5,14 +5,18 @@
 #include <iostream>
 #include <cmath>
 
+// x += (target - x) * 0.1
+
 int main(int argc, char* argv[])
 {
 	// Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{
 		SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
 		return 1;
 	}
+
+	// SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN, &window, &renderer);
 
 	// Get width of device, set that as width of window, then using 16:9 ration get height of window
 	int screen_width = GetSystemMetrics(SM_CXSCREEN);
@@ -60,15 +64,29 @@ int main(int argc, char* argv[])
 	}
 	SDL_FreeSurface(surface);
 
+	// for resource gathering
+	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
+
 	// Main loop
-	int positions[2][2] = { { 305, 200 }, { 500, 600 } };
+	float positions[2][2] = { { 305, 200 }, { 500, 600 } };
 	float scale = 1;
 	SDL_Event event;
 	bool mouse_down = false;
 	int drag_start_x;
 	int drag_start_y;
 	int end_drag_x = 0, end_drag_y = 0;
-	while (true)
+	bool running = true;
+	SDL_Vertex vertex_1 = { {10, 0}, {255, 0, 0, 255}, {1, 1} };
+	SDL_Vertex vertex_2 = { {20.5, 10.5}, {255, 0, 0, 255}, {1, 1} };
+	SDL_Vertex vertex_3 = { {10.5, 20.5}, {255, 0, 0, 255}, {1, 1} };
+	float grid[40][30][2];
+	for (int i = 0; i < 30; ++i) {
+		for (int j = 0; j < 40; ++j) {
+			grid[j][i][0] = (j + 0.5) * 35;
+			grid[j][i][1] = (i + 0.5) * 25;
+		}
+	}
+	while (running)
 	{
 		// Pump the event loop
 		SDL_PumpEvents();
@@ -78,12 +96,8 @@ int main(int argc, char* argv[])
 		{
 			if (event.type == SDL_QUIT)
 			{
-				SDL_DestroyTexture(farmhouse);
-				SDL_DestroyRenderer(renderer);
-				SDL_DestroyWindow(window);
-				IMG_Quit();
-				SDL_Quit();
-				return 0;
+				running = false;
+				break;
 			}
 			if (event.type == SDL_MOUSEWHEEL)
 			{
@@ -104,6 +118,15 @@ int main(int argc, char* argv[])
 					// (The center of the scale is the mouse, so it makes sense for the scale to be at the mouse)
 					positions[i][0] = (positions[i][0] - event.wheel.mouseX) * new_scale / scale + event.wheel.mouseX;
 					positions[i][1] = (positions[i][1] - event.wheel.mouseY) * new_scale / scale + event.wheel.mouseY;
+				}
+
+				for (int i = 0; i < 30; ++i)
+				{
+					for (int j = 0; j < 40; ++j)
+					{
+						grid[j][i][0] = (grid[j][i][0] - event.wheel.mouseX) * new_scale / scale + event.wheel.mouseX;
+						grid[j][i][1] = (grid[j][i][1] - event.wheel.mouseY) * new_scale / scale + event.wheel.mouseY;
+					}
 				}
 
 				scale = new_scale;
@@ -138,6 +161,15 @@ int main(int argc, char* argv[])
 					positions[i][1] += delta_y;
 				}
 
+				for (int i = 0; i < 30; ++i)
+				{
+					for (int j = 0; j < 40; ++j)
+					{
+						grid[j][i][0] += delta_x;
+						grid[j][i][1] += delta_y;
+					}
+				}
+
 				drag_start_x = event.motion.x;
 				drag_start_y = event.motion.y;
 			}
@@ -145,19 +177,41 @@ int main(int argc, char* argv[])
 
 		// Render your frame here
 
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 		SDL_RenderClear(renderer);
 
-		int w = 200 * scale;
-		int h = farmhouse_height / (farmhouse_width / 200) * scale;
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		for (int i = 0; i < 30; ++i)
+		{
+			for (int j = 0; j < 40; ++j)
+			{
+				float x = grid[j][i][0];
+				float y = grid[j][i][1];
+				float w = 35 * scale;
+				float h = 25 * scale;
+				SDL_FPoint points[5] = {
+					{x,			y - h / 2},
+					{x + w / 2, y		 },
+					{x,			y + h / 2},
+					{x - w / 2, y		 },
+					{x,			y - h / 2}
+				};
+
+				SDL_RenderDrawLinesF(renderer, points, 5);
+			}
+		}
+
+		float w = 200 * scale;
+		float h = farmhouse_height / (farmhouse_width / 200) * scale;
 
 		for (int i = 0; i < 2; ++i)
 		{
-			SDL_Rect dest_rect = {
-				positions[i][0] - w / 2,
-				positions[i][1] - h / 2,
+			SDL_FRect dest_rect = {
+				positions[i][0] - w / 2.0,
+				positions[i][1] - h / 2.0,
 				w, h
 			};
-			SDL_RenderCopy(renderer, farmhouse, NULL, &dest_rect);
+			SDL_RenderCopyF(renderer, farmhouse, NULL, &dest_rect);
 		}
 
 		SDL_RenderPresent(renderer);
@@ -165,4 +219,12 @@ int main(int argc, char* argv[])
 		// Delay to limit frame rate
 		SDL_Delay(16);
 	}
+
+	//SDL_RemoveTimer(timerID);
+	SDL_DestroyTexture(farmhouse);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	IMG_Quit();
+	SDL_Quit();
+	return 0;
 }
