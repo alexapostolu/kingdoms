@@ -5,130 +5,14 @@
 
 #include <Windows.h> // GetSystemMetrics
 #include <iostream>
+#include <list>
 #include <vector>
-
-bool is_point_in_polygon(std::vector<std::pair< float, float>> const& vertices, float px, float py)
-{
-	bool collision = false;
-
-	// go through each of the vertices, plus
-	// the next vertex in the list
-	int next = 0;
-	for (int current = 0; current < vertices.size(); current++)
-	{
-
-		// get next vertex in list
-		// if we've hit the end, wrap around to 0
-		next = current + 1;
-		if (next == vertices.size()) next = 0;
-
-		// get the PVectors at our current position
-		// this makes our if statement a little cleaner
-		std::pair< float, float> const& vc = vertices[current];    // c for "current"
-		std::pair< float, float> const& vn = vertices[next];       // n for "next"
-
-		// compare position, flip 'collision' variable
-		// back and forth
-		if (((vc.second >= py && vn.second < py) || (vc.second < py && vn.second >= py)) &&
-			(px < (vn.first - vc.first) * (py - vc.second) / (vn.second - vc.second) + vc.first)) {
-			collision = !collision;
-		}
-	}
-	return collision;
-}
-
-// Function to determine the orientation of the triplet (p, q, r)
-int orientation(std::pair<float, float> const& p, std::pair<float, float> const& q, std::pair<float, float> const& r) {
-    float val = (q.second - p.second) * (r.first - q.first) - (q.first - p.first) * (r.second - q.second);
-    if (val == 0.0) return 0; // collinear
-    return (val > 0.0) ? 1 : 2; // clock or counterclock wise
-}
-
-// Function to check if line segments p1q1 and p2q2 intersect
-bool do_lines_intersect(std::pair<float, float> const& p1, std::pair<float, float> const& q1, std::pair<float, float> const& p2, std::pair<float, float> const& q2) {
-    int o1 = orientation(p1, q1, p2);
-    int o2 = orientation(p1, q1, q2);
-    int o3 = orientation(p2, q2, p1);
-    int o4 = orientation(p2, q2, q1);
-
-    if (o1 != o2 && o3 != o4) return true;
-
-    // Special cases
-	auto on_segment = [](std::pair<float, float> const& p, std::pair<float, float> const& q, std::pair<float, float> const& r) {
-		return q.first <= fmax(p.first, r.first) && q.first >= fmin(p.first, r.first) &&
-			q.second <= fmax(p.second, r.second) && q.second >= fmin(p.second, r.second);
-	};
-
-    if (o1 == 0 && on_segment(p1, p2, q1)) return true;
-    if (o2 == 0 && on_segment(p1, q2, q1)) return true;
-    if (o3 == 0 && on_segment(p2, p1, q2)) return true;
-    if (o4 == 0 && on_segment(p2, q1, q2)) return true;
-
-    return false;
-}
-
-// Function to check for collision detection between two rhombuses
-bool is_rhombus_in_rhombus(std::vector<std::pair<float, float>> const& rhombus1, std::vector<std::pair<float, float>> const& rhombus2)
-{
-    // Check for vertex containment
-    for (int i = 0; i < 4; ++i)
-	{
-        if (is_point_in_polygon(rhombus2, rhombus1[i].first, rhombus1[i].second) ||
-			is_point_in_polygon(rhombus1, rhombus2[i].first, rhombus2[i].second))
-			return true;
-    }
-
-    return false;
-}
 
 // x += (target - x) * 0.1
 
 float dist(float x1, float y1, float x2, float y2)
 {
 	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-}
-
-// Function to calculate the cross product of two vectors (ax, ay) and (bx, by)
-float crossProduct(float ax, float ay, float bx, float by) {
-	return ax * by - ay * bx;
-}
-
-// Function to check if point (px, py) is inside the rhombus
-bool isPointInRhombus(float px, float py, float cx, float cy, float w, float h) {
-	// Define the vertices of the rhombus
-	SDL_FPoint points[4] = {
-		{cx,         cy - h / 2},  // Top
-		{cx + w / 2, cy        },  // Right
-		{cx,         cy + h / 2},  // Bottom
-		{cx - w / 2, cy        }   // Left
-	};
-
-	// Calculate vectors from the vertices to the point
-	float vectors[4][2] = {
-		{px - points[0].x, py - points[0].y},
-		{px - points[1].x, py - points[1].y},
-		{px - points[2].x, py - points[2].y},
-		{px - points[3].x, py - points[3].y}
-	};
-
-	// Calculate cross products for each pair of vectors
-	float crossProducts[4] = {
-		crossProduct(points[1].x - points[0].x, points[1].y - points[0].y, vectors[0][0], vectors[0][1]),
-		crossProduct(points[2].x - points[1].x, points[2].y - points[1].y, vectors[1][0], vectors[1][1]),
-		crossProduct(points[3].x - points[2].x, points[3].y - points[2].y, vectors[2][0], vectors[2][1]),
-		crossProduct(points[0].x - points[3].x, points[0].y - points[3].y, vectors[3][0], vectors[3][1])
-	};
-
-	// Check if all cross products have the same sign
-	bool allPositive = true;
-	bool allNegative = true;
-
-	for (int i = 0; i < 4; ++i) {
-		if (crossProducts[i] < 0) allPositive = false;
-		if (crossProducts[i] > 0) allNegative = false;
-	}
-
-	return allPositive || allNegative;
 }
 
 int main(int argc, char* argv[])
@@ -168,26 +52,6 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Load image using SDL_image
-	SDL_Surface* surface = IMG_Load("../../assets/farmhouse.png");
-	if (!surface)
-	{
-		SDL_Log("Failed to load image: %s\n", IMG_GetError());
-		return 1;
-	}
-
-	int farmhouse_width = surface->w;
-	int farmhouse_height = surface->h;
-
-	// Convert surface to texture
-	SDL_Texture* farmhouse = SDL_CreateTextureFromSurface(renderer, surface);
-	if (!farmhouse)
-	{
-		SDL_Log("Failed to create texture: %s\n", SDL_GetError());
-		return 1;
-	}
-	SDL_FreeSurface(surface);
-
 	// for resource gathering
 	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
 
@@ -195,7 +59,7 @@ int main(int argc, char* argv[])
 	
 	SDL_Event event;
 
-	std::vector<king::Object> objects;
+	std::list<king::Farmhouse> farmhouses;
 
 
 	float scale = 1;
@@ -236,89 +100,40 @@ int main(int argc, char* argv[])
 	}
 
 
-	objects.push_back({ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] });
-	objects.push_back({ grid[fx][fy + 8][0] - 17.5f, grid[fx][fy + 8][1] + 25 });
-	objects.push_back({ grid[fx][fy - 2][0] - 17.5f, grid[fx][fy - 2][1] - 25 });
-	objects.push_back({ grid[fx - 3][fy + 3][0] - 52.5f, grid[fx - 3][fy + 3][1] });
-	std::vector<king::Object*> farm_grid1{ &objects[0], &objects[1], &objects[2], &objects[3] };
+	farmhouses.push_back(king::Farmhouse(
+		renderer,
+		std::array<SDL_Vertex, 4>{
+			SDL_Vertex{ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] },
+			SDL_Vertex{ grid[fx][fy + 8][0] - 17.5f, grid[fx][fy + 8][1] + 25 },
+			SDL_Vertex{ grid[fx][fy - 2][0] - 17.5f, grid[fx][fy - 2][1] - 25 },
+			SDL_Vertex{ grid[fx - 3][fy + 3][0] - 52.5f, grid[fx - 3][fy + 3][1] }
+		}
+	));
 
-	std::vector<std::pair<float, float>> farm_grid1_acc;
-	farm_grid1_acc.push_back({ grid[fx + 2][fy + 3][0] + 17.5, grid[fx + 2][fy + 3][1] });
-	farm_grid1_acc.push_back({ grid[fx][fy + 8][0] - 17.5, grid[fx][fy + 8][1] + 25 });
-	farm_grid1_acc.push_back({ grid[fx][fy - 2][0] - 17.5, grid[fx][fy - 2][1] - 25 });
-	farm_grid1_acc.push_back({ grid[fx - 3][fy + 3][0] - 52.5, grid[fx - 3][fy + 3][1] });
-	/*farm_grid.push_back({grid[fx + 3][fy + 2][0], grid[fx + 3][fy + 2][1]});
-	farm_grid.push_back({ grid[fx + 2][fy + 3][0], grid[fx + 2][fy + 3][1] });
-	farm_grid.push_back({ grid[fx + 2][fy + 1][0], grid[fx + 2][fy + 1][1] });
-	farm_grid.push_back({ grid[fx + 2][fy + 4][0], grid[fx + 2][fy + 4][1] });
-	farm_grid.push_back({ grid[fx + 2][fy + 2][0], grid[fx + 2][fy + 2][1] });
-	farm_grid.push_back({ grid[fx + 2][fy + 0][0], grid[fx + 2][fy + 0][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 5][0], grid[fx + 1][fy + 5][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 3][0], grid[fx + 1][fy + 3][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 1][0], grid[fx + 1][fy + 1][1] });
-	farm_grid.push_back({ grid[fx + 1][fy - 1][0], grid[fx + 1][fy - 1][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 6][0], grid[fx + 1][fy + 6][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 4][0], grid[fx + 1][fy + 4][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 2][0], grid[fx + 1][fy + 2][1] });
-	farm_grid.push_back({ grid[fx + 1][fy + 0][0], grid[fx + 1][fy + 0][1] });
-	farm_grid.push_back({ grid[fx + 1][fy - 2][0], grid[fx + 1][fy - 2][1] });
-	farm_grid.push_back({ grid[fx][fy + 7][0], grid[fx][fy + 7][1] });
-	farm_grid.push_back({ grid[fx][fy + 5][0], grid[fx][fy + 5][1] });
-	farm_grid.push_back({ grid[fx][fy + 3][0], grid[fx][fy + 3][1] });
-	farm_grid.push_back({ grid[fx][fy + 1][0], grid[fx][fy + 1][1] });
-	farm_grid.push_back({ grid[fx][fy - 1][0], grid[fx][fy - 1][1] });
-	farm_grid.push_back({ grid[fx][fy - 3][0], grid[fx][fy - 3][1] });
-	farm_grid.push_back({ grid[fx][fy + 8][0], grid[fx][fy + 8][1] });
-	farm_grid.push_back({ grid[fx][fy + 6][0], grid[fx][fy + 6][1] });
-	farm_grid.push_back({ grid[fx][fy + 4][0], grid[fx][fy + 4][1] });
-	farm_grid.push_back({ grid[fx][fy + 2][0], grid[fx][fy + 2][1] });
-	farm_grid.push_back({ grid[fx][fy + 0][0], grid[fx][fy + 0][1] });
-	farm_grid.push_back({ grid[fx][fy - 2][0], grid[fx][fy - 2][1] });
-	farm_grid.push_back({ grid[fx][fy - 4][0], grid[fx][fy - 4][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 7][0], grid[fx - 1][fy + 7][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 5][0], grid[fx - 1][fy + 5][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 3][0], grid[fx - 1][fy + 3][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 1][0], grid[fx - 1][fy + 1][1] });
-	farm_grid.push_back({ grid[fx - 1][fy - 1][0], grid[fx - 1][fy - 1][1] });
-	farm_grid.push_back({ grid[fx - 1][fy - 3][0], grid[fx - 1][fy - 3][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 6][0], grid[fx - 1][fy + 6][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 4][0], grid[fx - 1][fy + 4][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 2][0], grid[fx - 1][fy + 2][1] });
-	farm_grid.push_back({ grid[fx - 1][fy + 0][0], grid[fx - 1][fy + 0][1] });
-	farm_grid.push_back({ grid[fx - 1][fy - 2][0], grid[fx - 1][fy - 2][1] });
-	farm_grid.push_back({ grid[fx - 2][fy + 5][0], grid[fx - 2][fy + 5][1] });
-	farm_grid.push_back({ grid[fx - 2][fy + 3][0], grid[fx - 2][fy + 3][1] });
-	farm_grid.push_back({ grid[fx - 2][fy + 1][0], grid[fx - 2][fy + 1][1] });
-	farm_grid.push_back({ grid[fx - 2][fy - 1][0], grid[fx - 2][fy - 1][1] });
-	farm_grid.push_back({ grid[fx - 2][fy + 4][0], grid[fx - 2][fy + 4][1] });
-	farm_grid.push_back({ grid[fx - 2][fy + 2][0], grid[fx - 2][fy + 2][1] });
-	farm_grid.push_back({ grid[fx - 2][fy + 0][0], grid[fx - 2][fy + 0][1] });
-	farm_grid.push_back({ grid[fx - 3][fy + 3][0], grid[fx - 3][fy + 3][1] });
-	farm_grid.push_back({ grid[fx - 3][fy + 1][0], grid[fx - 3][fy + 1][1] });
-	farm_grid.push_back({ grid[fx - 3][fy + 2][0], grid[fx - 3][fy + 2][1] });*/
-
-
-
-	std::vector<std::pair<float, float>> farm_grid2;
 	// Find closest rhombus to center of farm grid. This rhombus is the center.
-	int fx2 = 0, fy2 = 0;
+	fx = 0, fy = 0;
 	for (int i = 0; i < grid_height; ++i)
 	{
 		for (int j = 0; j < grid_width; ++j)
 		{
 			if (dist(grid[j][i][0], grid[j][i][1], 605, 300) <
-				dist(grid[fx2][fy2][0], grid[fx2][fy2][1], 605, 300))
+				dist(grid[fx][fy][0], grid[fx][fy][1], 605, 300))
 			{
-				fx2 = j;
-				fy2 = i;
+				fx = j;
+				fy = i;
 			}
 		}
 	}
 
-	farm_grid2.push_back({ grid[fx2 + 2][fy2 + 3][0] + 17.5, grid[fx2 + 2][fy2 + 3][1] });
-	farm_grid2.push_back({ grid[fx2][fy2 - 2][0], grid[fx2][fy2 - 2][1] - 12.5 });
-	farm_grid2.push_back({ grid[fx2][fy2 + 8][0], grid[fx2][fy2 + 8][1] + 12.5 });
-	farm_grid2.push_back({ grid[fx2 - 3][fy2 + 3][0] - 17.5, grid[fx2 - 3][fy2 + 3][1] });
+	farmhouses.push_back(king::Farmhouse(
+		renderer,
+		std::array<SDL_Vertex, 4>{
+			SDL_Vertex{ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] },
+			SDL_Vertex{ grid[fx][fy - 2][0], grid[fx][fy - 2][1] - 12.5f },
+			SDL_Vertex{ grid[fx][fy + 8][0], grid[fx][fy + 8][1] + 12.5f },
+			SDL_Vertex{ grid[fx - 3][fy + 3][0] - 17.5f, grid[fx - 3][fy + 3][1] }
+		}
+	));
 
 	int farm_mx, farm_my;
 
@@ -354,14 +169,8 @@ int main(int argc, char* argv[])
 					}
 				}
 
-				for (auto& object : objects)
-					object.zoom(event.wheel);
-
-				for (auto& [x, y] : farm_grid1_acc)
-				{
-					x = (x - event.wheel.mouseX) * new_scale / scale + event.wheel.mouseX;
-					y = (y - event.wheel.mouseY) * new_scale / scale + event.wheel.mouseY;
-				}
+				for (auto& farmhouse : farmhouses)
+					farmhouse.zoom(event.wheel);
 
 				scale = new_scale;
 			}
@@ -403,14 +212,8 @@ int main(int argc, char* argv[])
 					}
 				}
 
-				for (auto& object : objects)
-					object.pan(delta_x, delta_y);
-
-				for (auto& [x, y] : farm_grid1_acc)
-				{
-					x += delta_x;
-					y += delta_y;
-				}
+				for (auto& farmhouse : farmhouses)
+					farmhouse.pan(delta_x, delta_y);
 
 				drag_start_x = event.motion.x;
 				drag_start_y = event.motion.y;
@@ -419,43 +222,8 @@ int main(int argc, char* argv[])
 			{
 				int delta_x = event.motion.x - farm_mx;
 				int delta_y = event.motion.y - farm_my;
-				for (int i = 0; i < farm_grid1_acc.size(); ++i)
-				{
-					farm_grid1_acc[i].first += delta_x;
-					farm_grid1_acc[i].second += delta_y;
-
-					float ws = 35 * scale;
-					float hs = 25 * scale;
-
-					float d = farm_grid1_acc[i].first - objects[i].x;
-					while (abs(d) >= ws)
-					{
-						if (d >= 0)
-						{
-							objects[i].x += ws;
-							d -= ws;
-						}
-						else
-						{
-							objects[i].x -= ws;
-							d += ws;
-						}
-					}
-					d = farm_grid1_acc[i].second - objects[i].y;
-					while (abs(d) >= hs)
-					{
-						if (d >= 0)
-						{
-							objects[i].y += hs;
-							d -= hs;
-						}
-						else
-						{
-							objects[i].y -= hs;
-							d += hs;
-						}
-					}
-				}
+				for (auto& farmhouse : farmhouses)
+					farmhouse.drag(delta_x, delta_y);
 
 				farm_mx = event.motion.x;
 				farm_my = event.motion.y;
@@ -473,7 +241,7 @@ int main(int argc, char* argv[])
 			int mx, my;
 			SDL_GetMouseState(&mx, &my);
 
-			if (isPointInRhombus(mx, my, (objects[0].x + objects[3].x) / 2, (objects[1].y + objects[2].y) / 2, 35 * 7 * scale, 25 * 7 * scale))
+			if (farmhouses.begin()->isPointInObject(mx, my))
 			{
 				display_farm_grid = 1;
 			}
@@ -506,80 +274,13 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		auto const& fg = objects;
-
-		std::vector<std::pair<float, float>> fg2(farm_grid2.begin(), farm_grid2.end());
-		for (auto& [x, y] : fg2)
-		{
-			int sx = 0, sy = 0;
-			for (int i = 0; i < grid_height; ++i)
-			{
-				for (int j = 0; j < grid_width; ++j)
-				{
-					if (dist(grid[j][i][0], grid[j][i][1], x, y) <
-						dist(grid[sx][sy][0], grid[sx][sy][1], x, y))
-					{
-						sx = j;
-						sy = i;
-					}
-				}
-			}
-			x = grid[sx][sy][0];
-			y = grid[sx][sy][1];
-		}
-
-	
-		auto clr = is_rhombus_in_rhombus(
-			{
-			std::make_pair(fg[0].x, fg[0].y), std::make_pair(fg[1].x, fg[1].y),
-			std::make_pair(fg[2].x, fg[2].y), std::make_pair(fg[3].x, fg[3].y)
-			},
-			{
-			std::make_pair(fg2[0].first, fg2[0].second), std::make_pair(fg2[1].first, fg2[1].second),
-			std::make_pair(fg2[2].first, fg2[2].second), std::make_pair(fg2[3].first, fg2[3].second)
-			})
+		auto clr = farmhouses.begin()->isPolygonInObject((++farmhouses.begin())->grid_snap_vertices)
 			? SDL_Colour{255, 0, 0, 255} : SDL_Colour{ 0, 255, 0, 255 };
 
-		const std::vector<SDL_Vertex> verts = {
-			{ SDL_FPoint{ fg[0].x, fg[0].y}, clr},
-			{ SDL_FPoint{ fg[1].x, fg[1].y}, clr} ,
-			{ SDL_FPoint{ fg[2].x, fg[2].y},clr},
-			{ SDL_FPoint{ fg[1].x, fg[1].y}, clr},
-			{ SDL_FPoint{ fg[2].x, fg[2].y}, clr},
-			{ SDL_FPoint{ fg[3].x, fg[3].y},  clr}
-		};
+		farmhouses.begin()->clr = clr;
 
-		const std::vector<SDL_Vertex> vert2 = {
-			{ SDL_FPoint{fg2[1].first, fg2[1].second - 12.5f * scale}, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg2[2].first, fg2[2].second + 12.5f * scale}, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg2[3].first - 17.5f * scale, fg2[3].second}, clr, SDL_FPoint{0},}
-		};
-		const std::vector<SDL_Vertex> verts2 = {
-			{ SDL_FPoint{fg2[0].first + 17.5f * scale, fg2[0].second},  clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg2[1].first, fg2[1].second - 12.5f * scale }, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg2[2].first, fg2[2].second + 12.5f * scale }, clr, SDL_FPoint{0},}
-		};
-
-		SDL_RenderGeometry(renderer, nullptr, verts.data(), verts.size(), nullptr, 0);
-		SDL_RenderGeometry(renderer, nullptr, verts2.data(), verts2.size(), nullptr, 0);
-		SDL_RenderGeometry(renderer, nullptr, vert2.data(), vert2.size(), nullptr, 0);
-
-		float w = 200 * scale;
-		float h = farmhouse_height / (farmhouse_width / 200) * scale;
-		SDL_FRect dest_rect = {
-				(fg[0].x+ fg[3].x) / 2.0 - w / 2.0,
-				(fg[1].y+ fg[2].y) / 2.0 - h / 2.0 - 12.5f * scale - (20 * scale),
-				w, h
-		};
-		SDL_RenderCopyF(renderer, farmhouse, NULL, &dest_rect);
-
-
-		SDL_FRect dest_rect2 = {
-				(verts2[0].position.x + vert2[2].position.x) / 2.0 - w / 2.0,
-				(verts2[1].position.y + verts2[2].position.y) / 2.0 - h / 2.0 - 12.5f * scale - (20 * scale),
-				w, h
-		};
-		SDL_RenderCopyF(renderer, farmhouse, NULL, &dest_rect2);
+		for (auto const& farmhouse : farmhouses)
+			farmhouse.render(renderer);
 
 		SDL_RenderPresent(renderer);
 
@@ -587,8 +288,10 @@ int main(int argc, char* argv[])
 		SDL_Delay(16);
 	}
 
-	//SDL_RemoveTimer(timerID);
-	SDL_DestroyTexture(farmhouse);
+	for (auto& farmhouse : farmhouses)
+		SDL_DestroyTexture(farmhouse.texture);
+
+	//SDL_RemoveTimer(timerID); 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	IMG_Quit();
