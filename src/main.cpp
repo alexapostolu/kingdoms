@@ -1,4 +1,6 @@
-﻿#include "SDL.h"
+﻿#include "object.hpp"
+
+#include "SDL.h"
 #include "SDL_image.h"
 
 #include <Windows.h> // GetSystemMetrics
@@ -190,9 +192,13 @@ int main(int argc, char* argv[])
 	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
 
 	// Main loop
-	float positions[2][2] = { { 305, 200 }, { 605, 300} };
-	float scale = 1;
+	
 	SDL_Event event;
+
+	std::vector<king::Object> objects;
+
+
+	float scale = 1;
 	bool mouse_down = false;
 	int drag_start_x;
 	int drag_start_y;
@@ -209,19 +215,19 @@ int main(int argc, char* argv[])
 			grid[j][i][1] = i * 12.5;
 		}
 	}
+
 	Uint32 mouse_press_time = 0;
 
 	int display_farm_grid = -1;
 
-	std::vector<std::pair<float, float>> farm_grid1;
 	// Find closest rhombus to center of farm grid. This rhombus is the center.
 	int fx = 0, fy = 0;
 	for (int i = 0; i < grid_height; ++i)
 	{
 		for (int j = 0; j < grid_width; ++j)
 		{
-			if (dist(grid[j][i][0], grid[j][i][1], positions[0][0], positions[0][1]) <
-				dist(grid[fx][fy][0], grid[fx][fy][1], positions[0][0], positions[0][1]))
+			if (dist(grid[j][i][0], grid[j][i][1], 305, 200) <
+				dist(grid[fx][fy][0], grid[fx][fy][1], 305, 200))
 			{
 				fx = j;
 				fy = i;
@@ -229,10 +235,18 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	farm_grid1.push_back({ grid[fx + 2][fy + 3][0] + 17.5, grid[fx + 2][fy + 3][1] });
-	farm_grid1.push_back({ grid[fx][fy + 8][0], grid[fx][fy + 8][1] + 12.5 });
-	farm_grid1.push_back({ grid[fx][fy - 2][0], grid[fx][fy - 2][1] - 12.5 });
-	farm_grid1.push_back({ grid[fx - 3][fy + 3][0] - 17.5, grid[fx - 3][fy + 3][1] });
+
+	objects.push_back({ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] });
+	objects.push_back({ grid[fx][fy + 8][0] - 17.5f, grid[fx][fy + 8][1] + 25 });
+	objects.push_back({ grid[fx][fy - 2][0] - 17.5f, grid[fx][fy - 2][1] - 25 });
+	objects.push_back({ grid[fx - 3][fy + 3][0] - 52.5f, grid[fx - 3][fy + 3][1] });
+	std::vector<king::Object*> farm_grid1{ &objects[0], &objects[1], &objects[2], &objects[3] };
+
+	std::vector<std::pair<float, float>> farm_grid1_acc;
+	farm_grid1_acc.push_back({ grid[fx + 2][fy + 3][0] + 17.5, grid[fx + 2][fy + 3][1] });
+	farm_grid1_acc.push_back({ grid[fx][fy + 8][0] - 17.5, grid[fx][fy + 8][1] + 25 });
+	farm_grid1_acc.push_back({ grid[fx][fy - 2][0] - 17.5, grid[fx][fy - 2][1] - 25 });
+	farm_grid1_acc.push_back({ grid[fx - 3][fy + 3][0] - 52.5, grid[fx - 3][fy + 3][1] });
 	/*farm_grid.push_back({grid[fx + 3][fy + 2][0], grid[fx + 3][fy + 2][1]});
 	farm_grid.push_back({ grid[fx + 2][fy + 3][0], grid[fx + 2][fy + 3][1] });
 	farm_grid.push_back({ grid[fx + 2][fy + 1][0], grid[fx + 2][fy + 1][1] });
@@ -283,6 +297,8 @@ int main(int argc, char* argv[])
 	farm_grid.push_back({ grid[fx - 3][fy + 1][0], grid[fx - 3][fy + 1][1] });
 	farm_grid.push_back({ grid[fx - 3][fy + 2][0], grid[fx - 3][fy + 2][1] });*/
 
+
+
 	std::vector<std::pair<float, float>> farm_grid2;
 	// Find closest rhombus to center of farm grid. This rhombus is the center.
 	int fx2 = 0, fy2 = 0;
@@ -290,8 +306,8 @@ int main(int argc, char* argv[])
 	{
 		for (int j = 0; j < grid_width; ++j)
 		{
-			if (dist(grid[j][i][0], grid[j][i][1], positions[1][0], positions[1][1]) <
-				dist(grid[fx2][fy2][0], grid[fx2][fy2][1], positions[1][0], positions[1][1]))
+			if (dist(grid[j][i][0], grid[j][i][1], 605, 300) <
+				dist(grid[fx2][fy2][0], grid[fx2][fy2][1], 605, 300))
 			{
 				fx2 = j;
 				fy2 = i;
@@ -329,18 +345,6 @@ int main(int argc, char* argv[])
 				if (new_scale < 0.5f || new_scale > 6.f)
 					break;
 
-				// Handle position offset from scroll
-				for (int i = 0; i < 2; ++i)
-				{
-					// Find offset from position to mouse
-					// Multiply that by new scale to get new offset
-					// Divide by old scale to get relative offset?? - that what gpt4o said and it worked
-					// Update the new position to be from the offset of mouse
-					// (The center of the scale is the mouse, so it makes sense for the scale to be at the mouse)
-					positions[i][0] = (positions[i][0] - event.wheel.mouseX) * new_scale / scale + event.wheel.mouseX;
-					positions[i][1] = (positions[i][1] - event.wheel.mouseY) * new_scale / scale + event.wheel.mouseY;
-				}
-
 				for (int i = 0; i < grid_height; ++i)
 				{
 					for (int j = 0; j < grid_width; ++j)
@@ -350,7 +354,10 @@ int main(int argc, char* argv[])
 					}
 				}
 
-				for (auto& [x, y] : farm_grid1)
+				for (auto& object : objects)
+					object.zoom(event.wheel);
+
+				for (auto& [x, y] : farm_grid1_acc)
 				{
 					x = (x - event.wheel.mouseX) * new_scale / scale + event.wheel.mouseX;
 					y = (y - event.wheel.mouseY) * new_scale / scale + event.wheel.mouseY;
@@ -387,13 +394,6 @@ int main(int argc, char* argv[])
 				end_drag_x += delta_x;
 				end_drag_y += delta_y;
 
-
-				for (int i = 0; i < 2; ++i)
-				{
-					positions[i][0] += delta_x;
-					positions[i][1] += delta_y;
-				}
-
 				for (int i = 0; i < grid_height; ++i)
 				{
 					for (int j = 0; j < grid_width; ++j)
@@ -403,7 +403,10 @@ int main(int argc, char* argv[])
 					}
 				}
 
-				for (auto& [x, y] : farm_grid1)
+				for (auto& object : objects)
+					object.pan(delta_x, delta_y);
+
+				for (auto& [x, y] : farm_grid1_acc)
 				{
 					x += delta_x;
 					y += delta_y;
@@ -416,19 +419,67 @@ int main(int argc, char* argv[])
 			{
 				int delta_x = event.motion.x - farm_mx;
 				int delta_y = event.motion.y - farm_my;
-				for (auto& [x, y] : farm_grid1)
+				for (int i = 0; i < farm_grid1_acc.size(); ++i)
 				{
-					x += delta_x;
-					y += delta_y;
+					farm_grid1_acc[i].first += delta_x;
+					farm_grid1_acc[i].second += delta_y;
+
+					float ws = 35 * scale;
+					float hs = 25 * scale;
+
+					float d = farm_grid1_acc[i].first - objects[i].x;
+					while (abs(d) >= ws)
+					{
+						if (d >= 0)
+						{
+							objects[i].x += ws;
+							d -= ws;
+						}
+						else
+						{
+							objects[i].x -= ws;
+							d += ws;
+						}
+					}
+					d = farm_grid1_acc[i].second - objects[i].y;
+					while (abs(d) >= hs)
+					{
+						if (d >= 0)
+						{
+							objects[i].y += hs;
+							d -= hs;
+						}
+						else
+						{
+							objects[i].y -= hs;
+							d += hs;
+						}
+					}
 				}
-				positions[0][0] += delta_x;
-				positions[0][1] += delta_y;
+
 				farm_mx = event.motion.x;
 				farm_my = event.motion.y;
 			}
 		}
 
-		// Render your frame here
+		// Handle mouse drag building
+		if (SDL_GetTicks() - mouse_press_time >= 800 && mouse_down && display_farm_grid == -1)
+		{
+			mouse_press_time = SDL_GetTicks();
+
+			// If mouse has been pressed for 800 ms, then assume player is trying to select a building
+			// Loop through all neighboring rhombuses in the grid to see if any of them are part of a building
+
+			int mx, my;
+			SDL_GetMouseState(&mx, &my);
+
+			if (isPointInRhombus(mx, my, (objects[0].x + objects[3].x) / 2, (objects[1].y + objects[2].y) / 2, 35 * 7 * scale, 25 * 7 * scale))
+			{
+				display_farm_grid = 1;
+			}
+		}
+
+		// Render frame
 
 		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 		SDL_RenderClear(renderer);
@@ -455,42 +506,7 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		if (SDL_GetTicks() - mouse_press_time >= 800 && mouse_down && display_farm_grid == -1)
-		{
-			mouse_press_time = SDL_GetTicks();
-
-			// If mouse has been pressed for 800 ms, then assume player is trying to select a building
-			// Loop through all neighboring rhombuses in the grid to see if any of them are part of a building
-
-			int mx, my;
-			SDL_GetMouseState(&mx, &my);
-
-			if (isPointInRhombus(mx, my, (farm_grid1[0].first + farm_grid1[3].first)/2, (farm_grid1[1].second + farm_grid1[2].second)/2, 35 * 7 * scale, 25 * 7 * scale))
-			{
-				display_farm_grid = 1;
-			}
-
-		}
-
-		std::vector<std::pair<float, float>> fg(farm_grid1.begin(), farm_grid1.end());
-		for (auto& [x, y] : fg)
-		{
-			int sx = 0, sy = 0;
-			for (int i = 0; i < grid_height; ++i)
-			{
-				for (int j = 0; j < grid_width; ++j)
-				{
-					if (dist(grid[j][i][0], grid[j][i][1], x, y) <
-						dist(grid[sx][sy][0], grid[sx][sy][1], x, y))
-					{
-						sx = j;
-						sy = i;
-					}
-				}
-			}
-			x = grid[sx][sy][0];
-			y = grid[sx][sy][1];
-		}
+		auto const& fg = objects;
 
 		std::vector<std::pair<float, float>> fg2(farm_grid2.begin(), farm_grid2.end());
 		for (auto& [x, y] : fg2)
@@ -513,26 +529,26 @@ int main(int argc, char* argv[])
 		}
 
 	
-		auto clr = is_rhombus_in_rhombus({
-			std::make_pair(fg[0].first + 17.5f * scale, fg[0].second), std::make_pair(fg[1].first, fg[1].second + 12.5f * scale),
-			std::make_pair(fg[2].first, fg[2].second - 12.5f * scale), std::make_pair(fg[3].first - 17.5f * scale, fg[3].second) },
+		auto clr = is_rhombus_in_rhombus(
 			{
-			std::make_pair(fg2[0].first + 17.5f * scale, fg2[0].second), std::make_pair(fg2[1].first, fg2[1].second + 12.5f * scale),
-			std::make_pair(fg2[2].first, fg2[2].second - 12.5f * scale), std::make_pair(fg2[3].first - 17.5f * scale, fg2[3].second) })
+			std::make_pair(fg[0].x, fg[0].y), std::make_pair(fg[1].x, fg[1].y),
+			std::make_pair(fg[2].x, fg[2].y), std::make_pair(fg[3].x, fg[3].y)
+			},
+			{
+			std::make_pair(fg2[0].first, fg2[0].second), std::make_pair(fg2[1].first, fg2[1].second),
+			std::make_pair(fg2[2].first, fg2[2].second), std::make_pair(fg2[3].first, fg2[3].second)
+			})
 			? SDL_Colour{255, 0, 0, 255} : SDL_Colour{ 0, 255, 0, 255 };
 
 		const std::vector<SDL_Vertex> verts = {
-			{ SDL_FPoint{fg[0].first + 17.5f * scale, fg[0].second}, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg[1].first, fg[1].second+12.5f* scale }, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg[2].first, fg[2].second -12.5f* scale },clr, SDL_FPoint{0},}
+			{ SDL_FPoint{ fg[0].x, fg[0].y}, clr},
+			{ SDL_FPoint{ fg[1].x, fg[1].y}, clr} ,
+			{ SDL_FPoint{ fg[2].x, fg[2].y},clr},
+			{ SDL_FPoint{ fg[1].x, fg[1].y}, clr},
+			{ SDL_FPoint{ fg[2].x, fg[2].y}, clr},
+			{ SDL_FPoint{ fg[3].x, fg[3].y},  clr}
 		};
-		SDL_RenderGeometry(renderer, nullptr, verts.data(), verts.size(), nullptr, 0);
 
-		const std::vector<SDL_Vertex> vert = {
-			{ SDL_FPoint{fg[1].first, fg[1].second + 12.5f * scale}, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg[2].first, fg[2].second  - 12.5f* scale}, clr, SDL_FPoint{0},},
-			{ SDL_FPoint{fg[3].first - 17.5f* scale, fg[3].second},  clr, SDL_FPoint{0},}
-		};
 		const std::vector<SDL_Vertex> vert2 = {
 			{ SDL_FPoint{fg2[1].first, fg2[1].second - 12.5f * scale}, clr, SDL_FPoint{0},},
 			{ SDL_FPoint{fg2[2].first, fg2[2].second + 12.5f * scale}, clr, SDL_FPoint{0},},
@@ -543,21 +559,20 @@ int main(int argc, char* argv[])
 			{ SDL_FPoint{fg2[1].first, fg2[1].second - 12.5f * scale }, clr, SDL_FPoint{0},},
 			{ SDL_FPoint{fg2[2].first, fg2[2].second + 12.5f * scale }, clr, SDL_FPoint{0},}
 		};
-		SDL_RenderGeometry(renderer, nullptr, vert.data(), vert.size(), nullptr, 0);
+
+		SDL_RenderGeometry(renderer, nullptr, verts.data(), verts.size(), nullptr, 0);
+		SDL_RenderGeometry(renderer, nullptr, verts2.data(), verts2.size(), nullptr, 0);
+		SDL_RenderGeometry(renderer, nullptr, vert2.data(), vert2.size(), nullptr, 0);
 
 		float w = 200 * scale;
 		float h = farmhouse_height / (farmhouse_width / 200) * scale;
 		SDL_FRect dest_rect = {
-				(verts[0].position.x + vert[2].position.x) / 2.0 - w / 2.0,
-				(verts[1].position.y + verts[2].position.y) / 2.0 - h / 2.0 - 12.5f * scale - (20 * scale),
+				(fg[0].x+ fg[3].x) / 2.0 - w / 2.0,
+				(fg[1].y+ fg[2].y) / 2.0 - h / 2.0 - 12.5f * scale - (20 * scale),
 				w, h
 		};
 		SDL_RenderCopyF(renderer, farmhouse, NULL, &dest_rect);
 
-
-		SDL_RenderGeometry(renderer, nullptr, verts2.data(), verts2.size(), nullptr, 0);
-
-		SDL_RenderGeometry(renderer, nullptr, vert2.data(), vert2.size(), nullptr, 0);
 
 		SDL_FRect dest_rect2 = {
 				(verts2[0].position.x + vert2[2].position.x) / 2.0 - w / 2.0,
