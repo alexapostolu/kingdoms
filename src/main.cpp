@@ -7,6 +7,8 @@
 #include <forward_list>
 #include <vector>
 
+#include <math.h>
+
 #ifdef _WIN32
 	#include <windows.h>
 #elif __APPLE__
@@ -26,10 +28,9 @@ int get_screen_width()
 	Display* display = XOpenDisplay(nullptr);
 	if (display)
 	{
-		Screen* screen = DefaultScreenOfDisplay(display);
-		metrics.width = screen->width;
-		metrics.height = screen->height;
+		int width = DefaultScreenOfDisplay(display)->width;
 		XCloseDisplay(display);
+		return width;
 	}
 	else
 	{
