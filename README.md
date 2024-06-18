@@ -2,6 +2,10 @@
 
 A single player kingdom building game. Build your kingdom and gain rewards attacking other kingdoms in the single player campaign.
 
+
+https://github.com/alexapostolu/kingdoms/assets/60247838/3efc5119-a3aa-4b32-acf4-be618945f453
+
+
 If you want to get playing, checkout the [Play](#play) section on how to install (Windows only) and play instantly!
 
 1. [Play (Windows only)](#play)
