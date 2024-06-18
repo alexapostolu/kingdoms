@@ -5,7 +5,7 @@
 
 #include <Windows.h> // GetSystemMetrics
 #include <iostream>
-#include <list>
+#include <forward_list>
 #include <vector>
 
 // x += (target - x) * 0.1
@@ -52,6 +52,8 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
 	// for resource gathering
 	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
 
@@ -59,8 +61,7 @@ int main(int argc, char* argv[])
 	
 	SDL_Event event;
 
-	std::list<king::Farmhouse> farmhouses;
-
+	std::forward_list<king::Farmhouse> farmhouses;
 
 	float scale = 1;
 	bool mouse_down = false;
@@ -82,8 +83,6 @@ int main(int argc, char* argv[])
 
 	Uint32 mouse_press_time = 0;
 
-	int display_farm_grid = -1;
-
 	// Find closest rhombus to center of farm grid. This rhombus is the center.
 	int fx = 0, fy = 0;
 	for (int i = 0; i < grid_height; ++i)
@@ -100,7 +99,7 @@ int main(int argc, char* argv[])
 	}
 
 
-	farmhouses.push_back(king::Farmhouse(
+	farmhouses.push_front(king::Farmhouse(
 		renderer,
 		std::array<SDL_Vertex, 4>{
 			SDL_Vertex{ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] },
@@ -125,7 +124,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	farmhouses.push_back(king::Farmhouse(
+	farmhouses.push_front(king::Farmhouse(
 		renderer,
 		std::array<SDL_Vertex, 4>{
 			SDL_Vertex{ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] },
@@ -134,8 +133,6 @@ int main(int argc, char* argv[])
 			SDL_Vertex{ grid[fx - 3][fy + 3][0] - 17.5f, grid[fx - 3][fy + 3][1] }
 		}
 	));
-
-	int farm_mx, farm_my;
 
 	while (running)
 	{
@@ -182,15 +179,18 @@ int main(int argc, char* argv[])
 				drag_start_x = event.button.x;
 				drag_start_y = event.button.y;
 
-				farm_mx = event.button.x;
-				farm_my = event.button.y;
+				for (auto& farmhouse : farmhouses)
+					farmhouse.mouse_pressed(event.button.x, event.button.y);
 			}
 			if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
 			{
 				mouse_down = false;
-				display_farm_grid = -1;
+				king::Farmhouse::drag_ptr = nullptr;
+
+				for (auto& farmhouse : farmhouses)
+					farmhouse.mouse_released();
 			}
-			if (event.type == SDL_MOUSEMOTION && mouse_down && display_farm_grid == -1)
+			if (event.type == SDL_MOUSEMOTION && mouse_down && !king::Farmhouse::drag_ptr)
 			{
 				int delta_x = event.motion.x - drag_start_x;
 				int delta_y = event.motion.y - drag_start_y;
@@ -218,33 +218,31 @@ int main(int argc, char* argv[])
 				drag_start_x = event.motion.x;
 				drag_start_y = event.motion.y;
 			}
-			if (event.type == SDL_MOUSEMOTION && display_farm_grid != -1)
+			if (event.type == SDL_MOUSEMOTION && king::Farmhouse::drag_ptr)
 			{
-				int delta_x = event.motion.x - farm_mx;
-				int delta_y = event.motion.y - farm_my;
-				for (auto& farmhouse : farmhouses)
-					farmhouse.drag(delta_x, delta_y);
-
-				farm_mx = event.motion.x;
-				farm_my = event.motion.y;
+				king::Farmhouse::drag_ptr->drag(event.motion.x, event.motion.y, farmhouses);
 			}
 		}
 
 		// Handle mouse drag building
-		if (SDL_GetTicks() - mouse_press_time >= 800 && mouse_down && display_farm_grid == -1)
+		if (SDL_GetTicks() - mouse_press_time >= 2000 && mouse_down && !king::Farmhouse::drag_ptr)
 		{
-			mouse_press_time = SDL_GetTicks();
-
 			// If mouse has been pressed for 800 ms, then assume player is trying to select a building
 			// Loop through all neighboring rhombuses in the grid to see if any of them are part of a building
 
 			int mx, my;
 			SDL_GetMouseState(&mx, &my);
 
-			if (farmhouses.begin()->isPointInObject(mx, my))
+			for (auto& farmhouse : farmhouses)
 			{
-				display_farm_grid = 1;
+				if (farmhouse.isPointInObject(mx, my))
+				{
+					king::Farmhouse::drag_ptr = &farmhouse;
+					break;
+				}
 			}
+
+			mouse_press_time = SDL_GetTicks();
 		}
 
 		// Render frame
@@ -274,12 +272,12 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		auto clr = farmhouses.begin()->isPolygonInObject((++farmhouses.begin())->grid_snap_vertices)
+	/*	auto clr = farmhouses.begin()->isPolygonInObject((++farmhouses.begin())->grid_snap_vertices)
 			? SDL_Colour{255, 0, 0, 255} : SDL_Colour{ 0, 255, 0, 255 };
 
-		farmhouses.begin()->clr = clr;
+		farmhouses.begin()->clr = clr;*/
 
-		for (auto const& farmhouse : farmhouses)
+		for (auto& farmhouse : farmhouses)
 			farmhouse.render(renderer);
 
 		SDL_RenderPresent(renderer);
