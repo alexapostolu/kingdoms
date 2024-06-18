@@ -1,4 +1,4 @@
-add_executable(kingdoms main.cpp ${SDL_fontcache_DIR}/SDL_FontCache.c)
+add_executable(kingdoms main.cpp object.cpp ${SDL_fontcache_DIR}/SDL_FontCache.c)
 
 # Specify the SDL2 and SDL2_ttf library directories
 target_link_libraries(kingdoms
