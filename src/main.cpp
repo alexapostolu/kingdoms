@@ -39,6 +39,20 @@ int get_screen_width()
 #endif
 }
 
+#define TICK_INTERVAL    30
+
+static Uint32 next_time;
+
+Uint32 time_left(void)
+{
+	Uint32 now = SDL_GetTicks();
+	if (next_time <= now)
+		return 0;
+	else
+		return next_time - now;
+}
+
+
 // x += (target - x) * 0.1
 
 float dist(float x1, float y1, float x2, float y2)
@@ -118,6 +132,9 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	next_time = SDL_GetTicks() + TICK_INTERVAL;
+
+
 	Uint32 mouse_press_time = 0;
 
 	// Find closest rhombus to center of farm grid. This rhombus is the center.
@@ -145,6 +162,8 @@ int main(int argc, char* argv[])
 			SDL_Vertex{ grid[fx - 3][fy + 3][0] - 52.5f, grid[fx - 3][fy + 3][1] }
 		}
 	));
+
+	bool mouse_in_motion = false;
 
 	// Find closest rhombus to center of farm grid. This rhombus is the center.
 	fx = 0, fy = 0;
@@ -184,7 +203,7 @@ int main(int argc, char* argv[])
 				running = false;
 				break;
 			}
-			if (event.type == SDL_MOUSEWHEEL)
+			else if (event.type == SDL_MOUSEWHEEL)
 			{
 				// Handle scroll
 				int scroll = event.wheel.y;
@@ -208,7 +227,7 @@ int main(int argc, char* argv[])
 
 				scale = new_scale;
 			}
-			if (event.type == SDL_MOUSEBUTTONDOWN)
+			else if (event.type == SDL_MOUSEBUTTONDOWN)
 			{
 				mouse_press_time = SDL_GetTicks();
 
@@ -216,19 +235,21 @@ int main(int argc, char* argv[])
 				drag_start_x = event.button.x;
 				drag_start_y = event.button.y;
 
-				for (auto& farmhouse : farmhouses)
-					farmhouse.mouse_pressed(event.button.x, event.button.y);
+				//for (auto& farmhouse : farmhouses)
+				//	farmhouse.mouse_pressed(event.button.x, event.button.y);
 			}
-			if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
+			else if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
 			{
+				mouse_in_motion = false;
 				mouse_down = false;
 				king::Farmhouse::drag_ptr = nullptr;
 
 				for (auto& farmhouse : farmhouses)
 					farmhouse.mouse_released();
 			}
-			if (event.type == SDL_MOUSEMOTION && mouse_down && !king::Farmhouse::drag_ptr)
+			else if (event.type == SDL_MOUSEMOTION && mouse_down && !king::Farmhouse::drag_ptr)
 			{
+				mouse_in_motion = true;
 				int delta_x = event.motion.x - drag_start_x;
 				int delta_y = event.motion.y - drag_start_y;
 
@@ -255,14 +276,15 @@ int main(int argc, char* argv[])
 				drag_start_x = event.motion.x;
 				drag_start_y = event.motion.y;
 			}
-			if (event.type == SDL_MOUSEMOTION && king::Farmhouse::drag_ptr)
+			else if (event.type == SDL_MOUSEMOTION && king::Farmhouse::drag_ptr)
 			{
+				mouse_in_motion = true;
 				king::Farmhouse::drag_ptr->drag(event.motion.x, event.motion.y, farmhouses);
 			}
 		}
 
 		// Handle mouse drag building
-		if (SDL_GetTicks() - mouse_press_time >= 2000 && mouse_down && !king::Farmhouse::drag_ptr)
+		if (SDL_GetTicks() - mouse_press_time >= 200 && mouse_down && !mouse_in_motion && !king::Farmhouse::drag_ptr)
 		{
 			// If mouse has been pressed for 800 ms, then assume player is trying to select a building
 			// Loop through all neighboring rhombuses in the grid to see if any of them are part of a building
@@ -272,11 +294,8 @@ int main(int argc, char* argv[])
 
 			for (auto& farmhouse : farmhouses)
 			{
-				if (farmhouse.isPointInObject(mx, my))
-				{
-					king::Farmhouse::drag_ptr = &farmhouse;
+				if (farmhouse.mouse_pressed(mx, my))
 					break;
-				}
 			}
 
 			mouse_press_time = SDL_GetTicks();
@@ -309,18 +328,14 @@ int main(int argc, char* argv[])
 			}
 		}
 
-	/*	auto clr = farmhouses.begin()->isPolygonInObject((++farmhouses.begin())->grid_snap_vertices)
-			? SDL_Colour{255, 0, 0, 255} : SDL_Colour{ 0, 255, 0, 255 };
-
-		farmhouses.begin()->clr = clr;*/
-
 		for (auto& farmhouse : farmhouses)
 			farmhouse.render(renderer);
 
 		SDL_RenderPresent(renderer);
 
 		// Delay to limit frame rate
-		SDL_Delay(16);
+		SDL_Delay(time_left());	
+		next_time += TICK_INTERVAL;
 	}
 
 	for (auto& farmhouse : farmhouses)
