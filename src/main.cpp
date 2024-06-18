@@ -3,10 +3,40 @@
 #include "SDL.h"
 #include "SDL_image.h"
 
-#include <Windows.h> // GetSystemMetrics
 #include <iostream>
 #include <forward_list>
 #include <vector>
+
+#ifdef _WIN32
+	#include <windows.h>
+#elif __APPLE__
+	#include <ApplicationServices/ApplicationServices.h>
+#elif __linux__
+	#include <X11/Xlib.h>
+#endif
+
+int get_screen_width()
+{
+#ifdef _WIN32
+	return GetSystemMetrics(SM_CXSCREEN);
+#elif __APPLE__
+	CGDirectDisplayID main_display = CGMainDisplayID();
+	return CGDisplayPixelsWide(mainDisplay);
+#elif __linux__
+	Display* display = XOpenDisplay(nullptr);
+	if (display)
+	{
+		Screen* screen = DefaultScreenOfDisplay(display);
+		metrics.width = screen->width;
+		metrics.height = screen->height;
+		XCloseDisplay(display);
+	}
+	else
+	{
+		return -1;
+	}
+#endif
+}
 
 // x += (target - x) * 0.1
 
@@ -27,7 +57,13 @@ int main(int argc, char* argv[])
 	// SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN, &window, &renderer);
 
 	// Get width of device, set that as width of window, then using 16:9 ration get height of window
-	int screen_width = GetSystemMetrics(SM_CXSCREEN);
+	int screen_width = get_screen_width();
+	if (screen_width == -1)
+	{
+		SDL_Log("Failed to get screen metrics for Linux device\n");
+		SDL_Quit();
+		return 1;
+	}
 	int screen_height = (9 * screen_width) / 16;
 
 	// Create an SDL window
@@ -38,7 +74,7 @@ int main(int argc, char* argv[])
 
 	if (!window)
 	{
-		SDL_Log("Could not create window: %s", SDL_GetError());
+		SDL_Log("Failed to create window: %s", SDL_GetError());
 		SDL_Quit();
 		return 1;
 	}
