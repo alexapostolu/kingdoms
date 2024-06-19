@@ -1,4 +1,5 @@
-﻿#include "object.hpp"
+﻿#include "grid.hpp"
+#include "farmhouse.hpp"
 
 #include "SDL.h"
 #include "SDL_image.h"
@@ -6,6 +7,7 @@
 #include <iostream>
 #include <forward_list>
 #include <vector>
+#include <array>
 
 #include <math.h>
 
@@ -39,7 +41,7 @@ int get_screen_width()
 #endif
 }
 
-#define TICK_INTERVAL    30
+#define TICK_INTERVAL 30
 
 static Uint32 next_time;
 
@@ -52,13 +54,7 @@ Uint32 time_left(void)
 		return next_time - now;
 }
 
-
-// x += (target - x) * 0.1
-
-float dist(float x1, float y1, float x2, float y2)
-{
-	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-}
+king::Grid grid(40, 60);
 
 int main(int argc, char* argv[])
 {
@@ -81,21 +77,16 @@ int main(int argc, char* argv[])
 	}
 	int screen_height = (9 * screen_width) / 16;
 
-	// Create an SDL window
-	SDL_Window* window = SDL_CreateWindow("Kingdoms",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		screen_width, screen_height,
-		SDL_WINDOW_SHOWN);
+	SDL_Window* window;
+	SDL_Renderer* renderer;
 
+	SDL_CreateWindowAndRenderer(screen_width, screen_height, SDL_WINDOW_SHOWN, &window, &renderer);
 	if (!window)
 	{
 		SDL_Log("Failed to create window: %s", SDL_GetError());
 		SDL_Quit();
 		return 1;
 	}
-
-	// Create a renderer
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	if (!renderer)
 	{
 		SDL_Log("Could not create renderer: %s", SDL_GetError());
@@ -108,11 +99,10 @@ int main(int argc, char* argv[])
 	// for resource gathering
 	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
 
-	// Main loop
-	
-	SDL_Event event;
-
-	std::forward_list<king::Farmhouse> farmhouses;
+	std::forward_list<king::Farmhouse> farmhouses{
+		king::Farmhouse(renderer, { 300, 200 }, grid),
+		king::Farmhouse(renderer, { 600, 300 }, grid)
+	};
 
 	float scale = 1;
 	bool mouse_down = false;
@@ -120,76 +110,16 @@ int main(int argc, char* argv[])
 	int drag_start_y;
 	int end_drag_x = 0, end_drag_y = 0;
 	bool running = true;
-	int const grid_width = 40;
-	int const grid_height = 60;
-	float grid[grid_width][grid_height][2];
-	for (int i = 0; i < grid_height; ++i)
-	{
-		for (int j = 0; j < grid_width; ++j)
-		{
-			grid[j][i][0] = j * 35 + (i % 2 == 0 ? 0 : 17.5);
-			grid[j][i][1] = i * 12.5;
-		}
-	}
 
 	next_time = SDL_GetTicks() + TICK_INTERVAL;
 
-
 	Uint32 mouse_press_time = 0;
-
-	// Find closest rhombus to center of farm grid. This rhombus is the center.
-	int fx = 0, fy = 0;
-	for (int i = 0; i < grid_height; ++i)
-	{
-		for (int j = 0; j < grid_width; ++j)
-		{
-			if (dist(grid[j][i][0], grid[j][i][1], 305, 200) <
-				dist(grid[fx][fy][0], grid[fx][fy][1], 305, 200))
-			{
-				fx = j;
-				fy = i;
-			}
-		}
-	}
-
-
-	farmhouses.push_front(king::Farmhouse(
-		renderer,
-		std::array<SDL_Vertex, 4>{
-			SDL_Vertex{ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] },
-			SDL_Vertex{ grid[fx][fy + 8][0] - 17.5f, grid[fx][fy + 8][1] + 25 },
-			SDL_Vertex{ grid[fx][fy - 2][0] - 17.5f, grid[fx][fy - 2][1] - 25 },
-			SDL_Vertex{ grid[fx - 3][fy + 3][0] - 52.5f, grid[fx - 3][fy + 3][1] }
-		}
-	));
 
 	bool mouse_in_motion = false;
 
-	// Find closest rhombus to center of farm grid. This rhombus is the center.
-	fx = 0, fy = 0;
-	for (int i = 0; i < grid_height; ++i)
-	{
-		for (int j = 0; j < grid_width; ++j)
-		{
-			if (dist(grid[j][i][0], grid[j][i][1], 605, 300) <
-				dist(grid[fx][fy][0], grid[fx][fy][1], 605, 300))
-			{
-				fx = j;
-				fy = i;
-			}
-		}
-	}
+	SDL_Event event;
 
-	farmhouses.push_front(king::Farmhouse(
-		renderer,
-		std::array<SDL_Vertex, 4>{
-			SDL_Vertex{ grid[fx + 2][fy + 3][0] + 17.5f, grid[fx + 2][fy + 3][1] },
-			SDL_Vertex{ grid[fx][fy - 2][0], grid[fx][fy - 2][1] - 12.5f },
-			SDL_Vertex{ grid[fx][fy + 8][0], grid[fx][fy + 8][1] + 12.5f },
-			SDL_Vertex{ grid[fx - 3][fy + 3][0] - 17.5f, grid[fx - 3][fy + 3][1] }
-		}
-	));
-
+	// Main loop
 	while (running)
 	{
 		// Pump the event loop
@@ -213,17 +143,10 @@ int main(int argc, char* argv[])
 				if (new_scale < 0.5f || new_scale > 6.f)
 					break;
 
-				for (int i = 0; i < grid_height; ++i)
-				{
-					for (int j = 0; j < grid_width; ++j)
-					{
-						grid[j][i][0] = (grid[j][i][0] - event.wheel.mouseX) * new_scale / scale + event.wheel.mouseX;
-						grid[j][i][1] = (grid[j][i][1] - event.wheel.mouseY) * new_scale / scale + event.wheel.mouseY;
-					}
-				}
+				grid.mouse_wheel(event.wheel);
 
 				for (auto& farmhouse : farmhouses)
-					farmhouse.zoom(event.wheel);
+					farmhouse.mouse_wheel(event.wheel);
 
 				scale = new_scale;
 			}
@@ -234,9 +157,6 @@ int main(int argc, char* argv[])
 				mouse_down = true;
 				drag_start_x = event.button.x;
 				drag_start_y = event.button.y;
-
-				//for (auto& farmhouse : farmhouses)
-				//	farmhouse.mouse_pressed(event.button.x, event.button.y);
 			}
 			else if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
 			{
@@ -250,8 +170,8 @@ int main(int argc, char* argv[])
 			else if (event.type == SDL_MOUSEMOTION && mouse_down && !king::Farmhouse::drag_ptr)
 			{
 				mouse_in_motion = true;
-				int delta_x = event.motion.x - drag_start_x;
-				int delta_y = event.motion.y - drag_start_y;
+				float delta_x = event.motion.x - drag_start_x;
+				float delta_y = event.motion.y - drag_start_y;
 
 				if (end_drag_x + delta_x < -screen_width / 2 || end_drag_x + delta_x > screen_width / 2)
 					break;
@@ -261,14 +181,7 @@ int main(int argc, char* argv[])
 				end_drag_x += delta_x;
 				end_drag_y += delta_y;
 
-				for (int i = 0; i < grid_height; ++i)
-				{
-					for (int j = 0; j < grid_width; ++j)
-					{
-						grid[j][i][0] += delta_x;
-						grid[j][i][1] += delta_y;
-					}
-				}
+				grid.mouse_drag(delta_x, delta_y);
 
 				for (auto& farmhouse : farmhouses)
 					farmhouse.pan(delta_x, delta_y);
@@ -307,26 +220,7 @@ int main(int argc, char* argv[])
 		SDL_RenderClear(renderer);
 
 		// Draw grid
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		for (int i = 0; i < grid_height; ++i)
-		{
-			for (int j = 0; j < grid_width; ++j)
-			{
-				float x = grid[j][i][0];
-				float y = grid[j][i][1];
-				float w = 35 * scale;
-				float h = 25 * scale;
-				SDL_FPoint points[5] = {
-					{x,			y - h / 2},
-					{x + w / 2, y		 },
-					{x,			y + h / 2},
-					{x - w / 2, y		 },
-					{x,			y - h / 2}
-				};
-
-				SDL_RenderDrawLinesF(renderer, points, 5);
-			}
-		}
+		grid.render(renderer);
 
 		for (auto& farmhouse : farmhouses)
 			farmhouse.render(renderer);
