@@ -106,7 +106,8 @@ int main(int argc, char* argv[])
 		king::Farmhouse(renderer, { 600, 300 }, grid, scale)
 	};
 
-	SDL_AddTimer(3000, king::Farmhouse::resource_callback, &(*farmhouses.begin()));
+	for (auto& farmhouse : farmhouses)
+		farmhouse.init_resource_timer();
 
 	bool mouse_down = false;
 	int drag_start_x;

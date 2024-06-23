@@ -25,6 +25,8 @@ public:
 		float _scale
 	);
 
+	void init_resource_timer();
+
 	~Farmhouse();
 
 public:

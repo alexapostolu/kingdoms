@@ -24,8 +24,6 @@ king::Farmhouse::Farmhouse(
 	, display_resource(false),  resource_texture(nullptr)
 	, resource_texture_width(-1), resource_texture_height(-1)
 {
-	//SDL_AddTimer(3000, Farmhouse::resource_callback, this);
-
 	/* Get texture */
 
 	// Load image using SDL_image
@@ -99,6 +97,11 @@ king::Farmhouse::Farmhouse(
 	offset_y = 25;
 
 	absolute_vertices = grid_snap_vertices;
+}
+
+void king::Farmhouse::init_resource_timer()
+{
+	SDL_AddTimer(3000, Farmhouse::resource_callback, this);
 }
 
 king::Farmhouse::~Farmhouse()
