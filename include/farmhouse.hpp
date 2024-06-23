@@ -49,6 +49,8 @@ public:
 
 	void render(SDL_Renderer* renderer, float scale);
 
+	static Uint32 resource_callback(Uint32 interval, void* obj);
+
 private:
 	bool is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const;
 
@@ -71,6 +73,11 @@ public:
 	// If the movement ends at an invalid location, reset the position to original
 	std::array<SDL_Vertex, 4> start_grid_snap_vertices;
 	std::array<SDL_Vertex, 4> start_absolute_vertices;
+
+	// Resourse Generation
+	SDL_Texture* resource_texture;
+	int resource_texture_width, resource_texture_height;
+	bool display_resource;
 };
 
 } // namespace king

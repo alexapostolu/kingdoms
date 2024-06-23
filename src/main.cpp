@@ -43,7 +43,7 @@ int get_screen_width()
 
 #define TICK_INTERVAL 30
 
-static Uint32 next_time;
+Uint32 next_time;
 
 Uint32 time_left(void)
 {
@@ -55,6 +55,11 @@ Uint32 time_left(void)
 }
 
 king::Grid grid(40, 60);
+
+/* Scroll */
+
+static constexpr float MIN_SCALE = 0.5f;
+static constexpr float MAX_SCALE = 6.f;
 
 int main(int argc, char* argv[])
 {
@@ -94,15 +99,14 @@ int main(int argc, char* argv[])
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-	// for resource gathering
-	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
-
 	float scale = 1;
 
 	std::forward_list<king::Farmhouse> farmhouses{
 		king::Farmhouse(renderer, { 300, 200 }, grid, scale),
 		king::Farmhouse(renderer, { 600, 300 }, grid, scale)
 	};
+
+	SDL_AddTimer(3000, king::Farmhouse::resource_callback, &(*farmhouses.begin()));
 
 	bool mouse_down = false;
 	int drag_start_x;
@@ -116,11 +120,9 @@ int main(int argc, char* argv[])
 
 	bool mouse_in_motion = false;
 
-	SDL_Event event;
-
 	int stop_drag = 0;
 
-
+	SDL_Event event;
 
 	// Main loop
 	while (running)
@@ -142,9 +144,12 @@ int main(int argc, char* argv[])
 				int scroll = event.wheel.y;
 				float new_scale = scale + scroll * 0.1f;
 
-				// Prevent scrolling too close or far
-				if (new_scale < 0.5f || new_scale > 6.f)
-					break;
+				/*if (new_scale < MIN_SCALE)
+					lerp_scroll = LerpScroll::IN_;
+				else if (new_scale > MAX_SCALE)
+					lerp_scroll = LerpScroll::OUT_;*/
+
+				printf("%f\n", new_scale);
 
 				float scale_ratio = new_scale / scale;
 				float mouse_x = event.wheel.mouseX;
@@ -170,9 +175,6 @@ int main(int argc, char* argv[])
 			}
 			else if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
 			{
-				//if (stop_drag == 1)
-				//	stop_drag = 2;
-
 				mouse_in_motion = false;
 				mouse_down = false;
 				king::Farmhouse::drag_ptr = nullptr;

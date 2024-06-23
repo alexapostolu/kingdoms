@@ -16,12 +16,16 @@ king::Farmhouse::Farmhouse(
 	Grid const& grid,
 	float _scale
 )
-	: texture(NULL), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
+	: texture(nullptr), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
 	, offset_x(-1), offset_y(-1)
 	, grid_snap_vertices(), absolute_vertices()
 	, start_mouse_drag_x(-1), start_mouse_drag_y(-1)
 	, start_grid_snap_vertices(), start_absolute_vertices()
+	, display_resource(false),  resource_texture(nullptr)
+	, resource_texture_width(-1), resource_texture_height(-1)
 {
+	//SDL_AddTimer(3000, Farmhouse::resource_callback, this);
+
 	/* Get texture */
 
 	// Load image using SDL_image
@@ -44,6 +48,29 @@ king::Farmhouse::Farmhouse(
 	}
 
 	SDL_FreeSurface(surface);
+
+	/* Get resource texture */
+
+	// Load image using SDL_image
+	SDL_Surface* wheat_surface = IMG_Load("../../assets/wheat.png");
+	if (!wheat_surface)
+	{
+		SDL_Log("Failed to load image: %s\n", IMG_GetError());
+		return;
+	}
+
+	resource_texture_width = wheat_surface->w;
+	resource_texture_height = wheat_surface->h;
+
+	// Convert surface to texture
+	resource_texture = SDL_CreateTextureFromSurface(renderer, wheat_surface);
+	if (!resource_texture)
+	{
+		SDL_Log("Failed to create texture: %s\n", SDL_GetError());
+		return;
+	}
+
+	SDL_FreeSurface(wheat_surface);
 
 	/* Get grid position */
 
@@ -247,8 +274,7 @@ void king::Farmhouse::render(SDL_Renderer* renderer, float scale)
 		0, 1, 2, // Top, Right, Bottom
 		0, 3, 2  // Top, Bottom, Left
 	};
-	if (SDL_RenderGeometry(renderer, NULL, grid_snap_vertices.data(), grid_snap_vertices.size(), indices, 6) == -1)
-		SDL_Log("Failed to render farmhouse grid base: %s\n", SDL_GetError());
+	SDL_RenderGeometry(renderer, NULL, grid_snap_vertices.data(), grid_snap_vertices.size(), indices, 6);
 
 	// Render farmhouse
 	float x = grid_snap_vertices[0].position.x;
@@ -261,6 +287,30 @@ void king::Farmhouse::render(SDL_Renderer* renderer, float scale)
 		w, h
 	};
 
-	if (SDL_RenderCopyF(renderer, texture, NULL, &dest_rect) == -1)
-		SDL_Log("Failed to render farmhouse texture: %s\n", SDL_GetError());
+	SDL_RenderCopyF(renderer, texture, NULL, &dest_rect);
+
+	// Render resourse
+
+	if (display_resource)
+	{
+		float x = grid_snap_vertices[0].position.x;
+		float y = grid_snap_vertices[1].position.y - 50 * scale;
+		float w = 120 * scale;
+		float h = resource_texture_height / (resource_texture_width / 120) * scale;
+
+		SDL_FRect dest_rect{
+			x - (w / 2.0f), y - (h / 2.0f) - (offset_y * scale),
+			w, h
+		};
+
+		SDL_RenderCopyF(renderer, resource_texture, NULL, &dest_rect);
+	}
+}
+
+Uint32 king::Farmhouse::resource_callback(Uint32 interval, void* obj)
+{
+	auto* farmhouse = static_cast<king::Farmhouse*>(obj);
+	farmhouse->display_resource = true;
+
+	return interval;
 }
