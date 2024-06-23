@@ -65,8 +65,6 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN, &window, &renderer);
-
 	// Get width of device, set that as width of window, then using 16:9 ration get height of window
 	int screen_width = get_screen_width();
 	if (screen_width == -1)
@@ -89,7 +87,7 @@ int main(int argc, char* argv[])
 	}
 	if (!renderer)
 	{
-		SDL_Log("Could not create renderer: %s", SDL_GetError());
+		SDL_Log("Failed to create renderer: %s", SDL_GetError());
 		SDL_Quit();
 		return 1;
 	}
@@ -99,12 +97,13 @@ int main(int argc, char* argv[])
 	// for resource gathering
 	//SDL_TimerID timerID = SDL_AddTimer(1000, callback, "SDL");
 
+	float scale = 1;
+
 	std::forward_list<king::Farmhouse> farmhouses{
-		king::Farmhouse(renderer, { 300, 200 }, grid),
-		king::Farmhouse(renderer, { 600, 300 }, grid)
+		king::Farmhouse(renderer, { 300, 200 }, grid, scale),
+		king::Farmhouse(renderer, { 600, 300 }, grid, scale)
 	};
 
-	float scale = 1;
 	bool mouse_down = false;
 	int drag_start_x;
 	int drag_start_y;
@@ -118,6 +117,10 @@ int main(int argc, char* argv[])
 	bool mouse_in_motion = false;
 
 	SDL_Event event;
+
+	int stop_drag = 0;
+
+
 
 	// Main loop
 	while (running)
@@ -143,15 +146,22 @@ int main(int argc, char* argv[])
 				if (new_scale < 0.5f || new_scale > 6.f)
 					break;
 
-				grid.mouse_wheel(event.wheel);
+				float scale_ratio = new_scale / scale;
+				float mouse_x = event.wheel.mouseX;
+				float mouse_y = event.wheel.mouseY;
+
+				grid.mouse_wheel(mouse_x, mouse_y, scale_ratio);
 
 				for (auto& farmhouse : farmhouses)
-					farmhouse.mouse_wheel(event.wheel);
+					farmhouse.mouse_wheel(mouse_x, mouse_y, scale_ratio);
 
 				scale = new_scale;
 			}
 			else if (event.type == SDL_MOUSEBUTTONDOWN)
 			{
+				if (stop_drag != 0)
+					break;
+
 				mouse_press_time = SDL_GetTicks();
 
 				mouse_down = true;
@@ -160,54 +170,128 @@ int main(int argc, char* argv[])
 			}
 			else if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
 			{
+				//if (stop_drag == 1)
+				//	stop_drag = 2;
+
 				mouse_in_motion = false;
 				mouse_down = false;
 				king::Farmhouse::drag_ptr = nullptr;
 
 				for (auto& farmhouse : farmhouses)
-					farmhouse.mouse_released();
+					farmhouse.mouse_release();
 			}
-			else if (event.type == SDL_MOUSEMOTION && mouse_down && !king::Farmhouse::drag_ptr)
+			else if (event.type == SDL_MOUSEMOTION && mouse_down)
 			{
 				mouse_in_motion = true;
-				float delta_x = event.motion.x - drag_start_x;
-				float delta_y = event.motion.y - drag_start_y;
 
-				if (end_drag_x + delta_x < -screen_width / 2 || end_drag_x + delta_x > screen_width / 2)
-					break;
-				if (end_drag_y + delta_y < -screen_height / 2 || end_drag_y + delta_y > screen_height / 2)
-					break;
+				if (king::Farmhouse::drag_ptr)
+				{
+					king::Farmhouse::drag_ptr->mouse_drag(event.motion.x, event.motion.y, farmhouses, scale);
+				}
+				else
+				{
+					float delta_x = event.motion.x - drag_start_x;
+					float delta_y = event.motion.y - drag_start_y;
 
-				end_drag_x += delta_x;
-				end_drag_y += delta_y;
+					if (end_drag_x + delta_x < -screen_width / 2)
+						stop_drag = 1;
+					if (end_drag_x + delta_x > screen_width / 2)
+						stop_drag = -1;
+					if (end_drag_y + delta_y < -screen_height / 2)
+						stop_drag = 2;
+					if (end_drag_y + delta_y > screen_height / 2)
+						stop_drag = -2;
 
-				grid.mouse_drag(delta_x, delta_y);
+					end_drag_x += delta_x;
+					end_drag_y += delta_y;
 
-				for (auto& farmhouse : farmhouses)
-					farmhouse.pan(delta_x, delta_y);
+					grid.mouse_drag(delta_x, delta_y);
 
-				drag_start_x = event.motion.x;
-				drag_start_y = event.motion.y;
+					for (auto& farmhouse : farmhouses)
+						farmhouse.pan(delta_x, delta_y);
+
+					drag_start_x = event.motion.x;
+					drag_start_y = event.motion.y;
+				}
 			}
-			else if (event.type == SDL_MOUSEMOTION && king::Farmhouse::drag_ptr)
+		}
+
+		if (stop_drag != 0)
+		{
+			if (stop_drag == 1)
 			{
-				mouse_in_motion = true;
-				king::Farmhouse::drag_ptr->drag(event.motion.x, event.motion.y, farmhouses);
+				if (end_drag_x >= -screen_width / 2)
+				{
+					stop_drag = 0;
+				}
+				else if (end_drag_x < -screen_width / 2)
+				{
+					float dist_remaining = (end_drag_x)-(-screen_width / 2);
+					grid.mouse_drag(-dist_remaining * 0.1, 0);
+					for (auto& farmhouse : farmhouses)
+						farmhouse.pan(-dist_remaining * 0.1, 0);
+					end_drag_x -= dist_remaining * 0.1;
+				}
+			}
+			else if (stop_drag == -1)
+			{
+				if (end_drag_x <= screen_width / 2)
+				{
+					stop_drag = 0;
+				}
+				else if (end_drag_x > screen_width / 2)
+				{
+					float dist_remaining = -(end_drag_x)+(screen_width / 2);
+					grid.mouse_drag(dist_remaining * 0.1, 0);
+					for (auto& farmhouse : farmhouses)
+						farmhouse.pan(dist_remaining * 0.1, 0);
+					end_drag_x += dist_remaining * 0.1;
+				}
+			}
+
+			if (stop_drag == 2)
+			{
+				if (end_drag_y >= -screen_height/ 2)
+				{
+					stop_drag = 0;
+				}
+				else if (end_drag_y < -screen_height/ 2)
+				{
+					float dist_remaining = (end_drag_y)-(-screen_height / 2);
+					grid.mouse_drag(0, -dist_remaining * 0.1);
+					for (auto& farmhouse : farmhouses)
+						farmhouse.pan(0, -dist_remaining * 0.1);
+					end_drag_y -= dist_remaining * 0.1;
+				}
+			}
+			else if (stop_drag == -2)
+			{
+				if (end_drag_y <= screen_height/ 2)
+				{
+					stop_drag = 0;
+				}
+				else if (end_drag_y > screen_height / 2)
+				{
+					float dist_remaining = -(end_drag_y)+(screen_height / 2);
+					grid.mouse_drag(0, dist_remaining * 0.1);
+					for (auto& farmhouse : farmhouses)
+						farmhouse.pan(0, dist_remaining * 0.1);
+					end_drag_y += dist_remaining * 0.1;
+				}
 			}
 		}
 
 		// Handle mouse drag building
 		if (SDL_GetTicks() - mouse_press_time >= 200 && mouse_down && !mouse_in_motion && !king::Farmhouse::drag_ptr)
 		{
-			// If mouse has been pressed for 800 ms, then assume player is trying to select a building
-			// Loop through all neighboring rhombuses in the grid to see if any of them are part of a building
+			// If mouse has been pressed for 200 ms, then assume player is trying to select a building
 
 			int mx, my;
 			SDL_GetMouseState(&mx, &my);
 
 			for (auto& farmhouse : farmhouses)
 			{
-				if (farmhouse.mouse_pressed(mx, my))
+				if (farmhouse.mouse_press(mx, my))
 					break;
 			}
 
@@ -220,10 +304,10 @@ int main(int argc, char* argv[])
 		SDL_RenderClear(renderer);
 
 		// Draw grid
-		grid.render(renderer);
+		grid.render(renderer, scale);
 
 		for (auto& farmhouse : farmhouses)
-			farmhouse.render(renderer);
+			farmhouse.render(renderer, scale);
 
 		SDL_RenderPresent(renderer);
 

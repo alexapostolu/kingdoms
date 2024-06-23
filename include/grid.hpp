@@ -13,15 +13,13 @@ public:
 	~Grid();
 
 public:
-	void mouse_wheel(SDL_MouseWheelEvent const& wheel);
+	void mouse_wheel(int mouse_x, int mouse_y, float scale_ratio);
 	void mouse_drag(float dx, float dy);
-	void render(SDL_Renderer* renderer);
+	void render(SDL_Renderer* renderer, float scale);
 
 public:
-	SDL_FPoint** data;
 	int width, height;
-
-	float old_scale;
+	SDL_FPoint** data;
 };
 
 }

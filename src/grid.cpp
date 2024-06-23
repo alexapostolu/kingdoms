@@ -3,7 +3,7 @@
 #include "SDL.h"
 
 king::Grid::Grid(int _width, int _height)
-	: width(_width), height(_height), old_scale(1)
+	: width(_width), height(_height), data(nullptr)
 {
 	data = new SDL_FPoint*[height];
 	for (int i = 0; i < height; ++i)
@@ -26,33 +26,16 @@ king::Grid::~Grid()
 	delete[] data;
 }
 
-void king::Grid::mouse_wheel(SDL_MouseWheelEvent const& wheel)
+void king::Grid::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 {
-	int scroll = wheel.y;
-	float new_scale = old_scale + scroll * 0.1f;
-
-	// Prevent scrolling too close or far
-	if (new_scale < 0.5f || new_scale > 6.f)
-		return;
-
-	// Find offset from position to mouse
-	// Multiply that by new scale to get new offset
-	// Divide by old scale to get relative offset?? - that what gpt4o said and it worked
-	// Update the new position to be from the offset of mouse
-
-	int mouse_x = wheel.mouseX;
-	int mouse_y = wheel.mouseY;
-
 	for (int i = 0; i < height; ++i)
 	{
 		for (int j = 0; j < width; ++j)
 		{
-			data[i][j].x = (data[i][j].x - mouse_x) * new_scale / old_scale + mouse_x;
-			data[i][j].y = (data[i][j].y - mouse_y) * new_scale / old_scale + mouse_y;
+			data[i][j].x = (data[i][j].x - mouse_x) * scale_ratio + mouse_x;
+			data[i][j].y = (data[i][j].y - mouse_y) * scale_ratio + mouse_y;
 		}
 	}
-
-	old_scale = new_scale;
 }
 
 void king::Grid::mouse_drag(float dx, float dy)
@@ -66,7 +49,7 @@ void king::Grid::mouse_drag(float dx, float dy)
 	}
 }
 
-void king::Grid::render(SDL_Renderer* renderer)
+void king::Grid::render(SDL_Renderer* renderer, float scale)
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	for (int i = 0; i < height; ++i)
@@ -75,8 +58,8 @@ void king::Grid::render(SDL_Renderer* renderer)
 		{
 			float x = data[i][j].x;
 			float y = data[i][j].y;
-			float w = 35 * old_scale;
-			float h = 25 * old_scale;
+			float w = 35 * scale;
+			float h = 25 * scale;
 			SDL_FPoint points[5] = {
 				{x,			y - h / 2},
 				{x + w / 2, y		 },
