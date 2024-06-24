@@ -23,6 +23,7 @@ king::Farmhouse::Farmhouse(
 	, start_grid_snap_vertices(), start_absolute_vertices()
 	, display_resource(false),  resource_texture(nullptr)
 	, resource_texture_width(-1), resource_texture_height(-1)
+	, resource_amount(0), resource_per_sec(5)
 {
 	/* Get texture */
 
@@ -149,7 +150,16 @@ bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, fl
 
 bool king::Farmhouse::mouse_press(float mx, float my)
 {
-	if (!is_point_in_rhombus(grid_snap_vertices, mx, my))
+	if (is_point_in_rhombus(grid_snap_vertices, mx, my))
+	{
+		if (display_resource)
+		{
+			resource_amount = 0;
+			display_resource = false;
+		}
+	}
+	return true;
+	/*if (!is_point_in_rhombus(grid_snap_vertices, mx, my))
 		return false;
 
 	Farmhouse::drag_ptr = this;
@@ -162,7 +172,7 @@ bool king::Farmhouse::mouse_press(float mx, float my)
 	start_grid_snap_vertices = grid_snap_vertices;
 	start_absolute_vertices = absolute_vertices;
 
-	return true;
+	return true;*/
 }
 
 bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const
@@ -310,10 +320,18 @@ void king::Farmhouse::render(SDL_Renderer* renderer, float scale)
 	}
 }
 
+void king::Farmhouse::update()
+{
+	resource_amount += resource_per_sec;
+}
+
 Uint32 king::Farmhouse::resource_callback(Uint32 interval, void* obj)
 {
 	auto* farmhouse = static_cast<king::Farmhouse*>(obj);
-	farmhouse->display_resource = true;
+	
+	farmhouse->resource_amount += farmhouse->resource_per_sec;
+	if (farmhouse->resource_amount >= 10)
+		farmhouse->display_resource = true;
 
 	return interval;
 }

@@ -51,6 +51,8 @@ public:
 
 	void render(SDL_Renderer* renderer, float scale);
 
+	void update();
+
 	static Uint32 resource_callback(Uint32 interval, void* obj);
 
 private:
@@ -80,6 +82,8 @@ public:
 	SDL_Texture* resource_texture;
 	int resource_texture_width, resource_texture_height;
 	bool display_resource;
+	float resource_amount;
+	float resource_per_sec;
 };
 
 } // namespace king

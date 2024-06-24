@@ -145,12 +145,8 @@ int main(int argc, char* argv[])
 				int scroll = event.wheel.y;
 				float new_scale = scale + scroll * 0.1f;
 
-				/*if (new_scale < MIN_SCALE)
-					lerp_scroll = LerpScroll::IN_;
-				else if (new_scale > MAX_SCALE)
-					lerp_scroll = LerpScroll::OUT_;*/
-
-				printf("%f\n", new_scale);
+				if (new_scale < MIN_SCALE || new_scale > MAX_SCALE)
+					break;
 
 				float scale_ratio = new_scale / scale;
 				float mouse_x = event.wheel.mouseX;
@@ -173,6 +169,9 @@ int main(int argc, char* argv[])
 				mouse_down = true;
 				drag_start_x = event.button.x;
 				drag_start_y = event.button.y;
+
+				for (auto& farmhouse : farmhouses)
+					farmhouse.mouse_press(event.button.x, event.button.y);
 			}
 			else if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
 			{
@@ -310,7 +309,10 @@ int main(int argc, char* argv[])
 		grid.render(renderer, scale);
 
 		for (auto& farmhouse : farmhouses)
+		{
+			farmhouse.update();
 			farmhouse.render(renderer, scale);
+		}
 
 		SDL_RenderPresent(renderer);
 
