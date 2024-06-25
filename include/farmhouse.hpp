@@ -36,6 +36,7 @@ public:
 	 * @returns True if mouse is pressed over the object
 	 */
 	bool mouse_press(float mx, float my);
+	void mouse_press_update();
 
 	/*
 	 * @param farmhouses For collision detection

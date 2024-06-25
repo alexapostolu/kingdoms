@@ -61,6 +61,17 @@ king::Grid grid(40, 60);
 static constexpr float MIN_SCALE = 0.5f;
 static constexpr float MAX_SCALE = 6.f;
 
+namespace MouseState {
+	enum {
+		PRESS = 0x00001,
+		DRAG_GRID = 0x00010,
+		DRAG_BUILDING = 0x00100,
+		RELEASE = 0x01000,
+		SCROLL = 0x10000,
+		NONE = 0x00000
+	};
+}
+
 int main(int argc, char* argv[])
 {
 	// Initialize SDL
@@ -113,7 +124,6 @@ int main(int argc, char* argv[])
 	int drag_start_x;
 	int drag_start_y;
 	int end_drag_x = 0, end_drag_y = 0;
-	bool running = true;
 
 	next_time = SDL_GetTicks() + TICK_INTERVAL;
 
@@ -123,99 +133,155 @@ int main(int argc, char* argv[])
 
 	int stop_drag = 0;
 
+	bool game_loop = true;
 	SDL_Event event;
 
+	bool drag_building = false;
+
+	// Handle mouse events (scroll, press and drag)
+	int mouse_state = MouseState::NONE;
+	Uint32 mouse_time = SDL_GetTicks();
+
 	// Main loop
-	while (running)
+	while (game_loop)
 	{
 		// Pump the event loop
 		SDL_PumpEvents();
 
-		// Poll for events
 		while (SDL_PollEvent(&event))
 		{
-			if (event.type == SDL_QUIT)
+			switch (event.type)
 			{
-				running = false;
-				break;
-			}
-			else if (event.type == SDL_MOUSEWHEEL)
-			{
-				// Handle scroll
-				int scroll = event.wheel.y;
-				float new_scale = scale + scroll * 0.1f;
-
-				if (new_scale < MIN_SCALE || new_scale > MAX_SCALE)
-					break;
-
-				float scale_ratio = new_scale / scale;
-				float mouse_x = event.wheel.mouseX;
-				float mouse_y = event.wheel.mouseY;
-
-				grid.mouse_wheel(mouse_x, mouse_y, scale_ratio);
-
-				for (auto& farmhouse : farmhouses)
-					farmhouse.mouse_wheel(mouse_x, mouse_y, scale_ratio);
-
-				scale = new_scale;
-			}
-			else if (event.type == SDL_MOUSEBUTTONDOWN)
-			{
-				if (stop_drag != 0)
-					break;
-
-				mouse_press_time = SDL_GetTicks();
-
+			case SDL_MOUSEBUTTONDOWN:
 				mouse_down = true;
-				drag_start_x = event.button.x;
-				drag_start_y = event.button.y;
+				mouse_time = SDL_GetTicks();
 
 				for (auto& farmhouse : farmhouses)
-					farmhouse.mouse_press(event.button.x, event.button.y);
-			}
-			else if (event.type == SDL_MOUSEBUTTONUP && mouse_down)
-			{
-				mouse_in_motion = false;
+				{
+					if (farmhouse.mouse_press(event.button.x, event.button.y))
+					{
+						king::Farmhouse::drag_ptr = &farmhouse;
+						break;
+					}
+				}
+
+				break;
+
+			case SDL_MOUSEBUTTONUP:
 				mouse_down = false;
+				mouse_state &= !MouseState::DRAG_GRID; // Mouse up signals end of drag
+				mouse_state &= !MouseState::DRAG_BUILDING;
+				drag_building = false;
+				mouse_in_motion = false;
 				king::Farmhouse::drag_ptr = nullptr;
 
-				for (auto& farmhouse : farmhouses)
-					farmhouse.mouse_release();
+				if (SDL_GetTicks() - mouse_time <= 200) // <= 200 ms for mouse press
+					mouse_state |= MouseState::PRESS;
+
+				break;
+
+			case SDL_MOUSEWHEEL:
+				mouse_state |= MouseState::SCROLL;
+				break;
+
+			case SDL_QUIT:
+				game_loop = false;
+				break;
 			}
-			else if (event.type == SDL_MOUSEMOTION && mouse_down)
+
+			// Ensure mouse drag is only assigned once so start mouse position isn't overriden
+			if (mouse_down && SDL_GetTicks() - mouse_time > 200 && !mouse_in_motion) // > 200 ms for mouse drag
 			{
-				mouse_in_motion = true;
-
-				if (king::Farmhouse::drag_ptr)
+				if (!king::Farmhouse::drag_ptr)
 				{
-					king::Farmhouse::drag_ptr->mouse_drag(event.motion.x, event.motion.y, farmhouses, scale);
+					mouse_in_motion = true;
+					mouse_state |= MouseState::DRAG_GRID;
+					drag_start_x = event.button.x;
+					drag_start_y = event.button.y;
 				}
-				else
+				else if (SDL_GetTicks() - mouse_time > 400)
 				{
-					float delta_x = event.motion.x - drag_start_x;
-					float delta_y = event.motion.y - drag_start_y;
-
-					if (end_drag_x + delta_x < -screen_width / 2)
-						stop_drag = 1;
-					if (end_drag_x + delta_x > screen_width / 2)
-						stop_drag = -1;
-					if (end_drag_y + delta_y < -screen_height / 2)
-						stop_drag = 2;
-					if (end_drag_y + delta_y > screen_height / 2)
-						stop_drag = -2;
-
-					end_drag_x += delta_x;
-					end_drag_y += delta_y;
-
-					grid.mouse_drag(delta_x, delta_y);
-
-					for (auto& farmhouse : farmhouses)
-						farmhouse.pan(delta_x, delta_y);
-
-					drag_start_x = event.motion.x;
-					drag_start_y = event.motion.y;
+					mouse_in_motion = true;
+					mouse_state |= MouseState::DRAG_BUILDING;
+					drag_start_x = event.button.x;
+					drag_start_y = event.button.y;
 				}
 			}
+		}
+
+		int mouse_x, mouse_y;
+		SDL_GetMouseState(&mouse_x, &mouse_y);
+
+		switch (mouse_state)
+		{
+		case MouseState::SCROLL: {
+			int scroll = event.wheel.y;
+			float new_scale = scale + scroll * 0.1f;
+
+			if (new_scale < MIN_SCALE || new_scale > MAX_SCALE)
+				break;
+
+			float scale_ratio = new_scale / scale;
+			grid.mouse_wheel(mouse_x, mouse_y, scale_ratio);
+
+			for (auto& farmhouse : farmhouses)
+				farmhouse.mouse_wheel(mouse_x, mouse_y, scale_ratio);
+
+			scale = new_scale;
+
+			// Mouse scroll is a one time thing, so we clear mouse scroll after this
+			mouse_state &= ~MouseState::SCROLL;
+			break;
+		}
+		case MouseState::PRESS: {
+			for (auto& farmhouse : farmhouses)
+			{
+				if (farmhouse.mouse_press(mouse_x, mouse_y))
+					farmhouse.mouse_press_update();
+			}
+
+			// Mouse press is a one time thing, so we clear mouse press after this
+			mouse_state &= !MouseState::PRESS;
+			break;
+		}
+		case MouseState::DRAG_GRID: {
+			float delta_x = mouse_x - drag_start_x;
+			float delta_y = mouse_y - drag_start_y;
+
+			if (end_drag_x + delta_x < -screen_width / 2)
+				stop_drag = 1;
+			if (end_drag_x + delta_x > screen_width / 2)
+				stop_drag = -1;
+			if (end_drag_y + delta_y < -screen_height / 2)
+				stop_drag = 2;
+			if (end_drag_y + delta_y > screen_height / 2)
+				stop_drag = -2;
+
+			end_drag_x += delta_x;
+			end_drag_y += delta_y;
+
+			grid.mouse_drag(delta_x, delta_y);
+
+			for (auto& farmhouse : farmhouses)
+				farmhouse.pan(delta_x, delta_y);
+
+			drag_start_x = mouse_x;
+			drag_start_y = mouse_y;
+			break;
+		}
+		case MouseState::DRAG_BUILDING: {
+			float delta_x = mouse_x - drag_start_x;
+			float delta_y = mouse_y - drag_start_y;
+
+			king::Farmhouse::drag_ptr->mouse_drag(delta_x, delta_y, farmhouses, scale);
+			drag_start_x = mouse_x;
+			drag_start_y = mouse_y;
+			break;
+		}
+		case MouseState::RELEASE: {
+			king::Farmhouse::drag_ptr = nullptr;
+			break;
+		}
 		}
 
 		if (stop_drag != 0)
@@ -283,22 +349,22 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		// Handle mouse drag building
-		if (SDL_GetTicks() - mouse_press_time >= 200 && mouse_down && !mouse_in_motion && !king::Farmhouse::drag_ptr)
-		{
-			// If mouse has been pressed for 200 ms, then assume player is trying to select a building
+		//// Handle mouse drag building
+		//if (SDL_GetTicks() - mouse_press_time >= 200 && mouse_down && !mouse_in_motion && !king::Farmhouse::drag_ptr)
+		//{
+		//	// If mouse has been pressed for 200 ms, then assume player is trying to select a building
 
-			int mx, my;
-			SDL_GetMouseState(&mx, &my);
+		//	int mx, my;
+		//	SDL_GetMouseState(&mx, &my);
 
-			for (auto& farmhouse : farmhouses)
-			{
-				if (farmhouse.mouse_press(mx, my))
-					break;
-			}
+		//	for (auto& farmhouse : farmhouses)
+		//	{
+		//		if (farmhouse.mouse_press(mx, my))
+		//			break;
+		//	}
 
-			mouse_press_time = SDL_GetTicks();
-		}
+		//	mouse_press_time = SDL_GetTicks();
+		//}
 
 		// Render frame
 

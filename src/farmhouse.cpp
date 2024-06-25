@@ -150,15 +150,8 @@ bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, fl
 
 bool king::Farmhouse::mouse_press(float mx, float my)
 {
-	if (is_point_in_rhombus(grid_snap_vertices, mx, my))
-	{
-		if (display_resource)
-		{
-			resource_amount = 0;
-			display_resource = false;
-		}
-	}
-	return true;
+	return is_point_in_rhombus(grid_snap_vertices, mx, my);
+
 	/*if (!is_point_in_rhombus(grid_snap_vertices, mx, my))
 		return false;
 
@@ -173,6 +166,15 @@ bool king::Farmhouse::mouse_press(float mx, float my)
 	start_absolute_vertices = absolute_vertices;
 
 	return true;*/
+}
+
+void king::Farmhouse::mouse_press_update()
+{
+	if (display_resource)
+	{
+		resource_amount = 0;
+		display_resource = false;
+	}
 }
 
 bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const
@@ -190,10 +192,10 @@ bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _ve
 	return false;
 }
 
-void king::Farmhouse::mouse_drag(float mx, float my, std::forward_list<Farmhouse> const& farmhouses, float scale)
+void king::Farmhouse::mouse_drag(float dx, float dy, std::forward_list<Farmhouse> const& farmhouses, float scale)
 {
-	int dx = mx - start_mouse_drag_x;
-	int dy = my - start_mouse_drag_y;
+	//int dx = mx - start_mouse_drag_x;
+	//int dy = my - start_mouse_drag_y;
 
 	for (int i = 0; i < grid_snap_vertices.size(); ++i)
 	{
@@ -233,8 +235,8 @@ void king::Farmhouse::mouse_drag(float mx, float my, std::forward_list<Farmhouse
 		}
 	}
 
-	start_mouse_drag_x = mx;
-	start_mouse_drag_y = my;
+	//start_mouse_drag_x = mx;
+	//start_mouse_drag_y = my;
 
 	// Update colour
 
