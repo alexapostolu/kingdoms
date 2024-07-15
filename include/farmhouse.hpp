@@ -7,6 +7,7 @@
 
 #include <forward_list>
 #include <array>
+#include <optional>
 
 namespace king {
 
@@ -36,7 +37,7 @@ public:
 	 * @returns True if mouse is pressed over the object
 	 */
 	bool mouse_press(float mx, float my);
-	void mouse_press_update();
+	int mouse_press_update();
 
 	/*
 	 * @param farmhouses For collision detection
@@ -76,6 +77,7 @@ public:
 	// Movement
 	float start_mouse_drag_x, start_mouse_drag_y;
 	// If the movement ends at an invalid location, reset the position to original
+	bool record_start_vertices;
 	std::array<SDL_Vertex, 4> start_grid_snap_vertices;
 	std::array<SDL_Vertex, 4> start_absolute_vertices;
 

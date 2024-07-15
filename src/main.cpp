@@ -3,9 +3,11 @@
 
 #include "SDL.h"
 #include "SDL_image.h"
+#include "SDL_FontCache.h"
 
 #include <iostream>
 #include <forward_list>
+#include <bitset>
 #include <vector>
 #include <array>
 
@@ -110,7 +112,15 @@ int main(int argc, char* argv[])
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
+	int wheat = 0;
+	int wood = 0;
+
+	FC_Font* font = FC_CreateFont();
+	FC_LoadFont(font, renderer, "../../assets/Cinzel.ttf", screen_height / 24, FC_MakeColor(255, 255, 255, 255), TTF_STYLE_NORMAL);
+
 	float scale = 1;
+
+	bool mouse_release = false;
 
 	std::forward_list<king::Farmhouse> farmhouses{
 		king::Farmhouse(renderer, { 300, 200 }, grid, scale),
@@ -141,6 +151,7 @@ int main(int argc, char* argv[])
 	// Handle mouse events (scroll, press and drag)
 	int mouse_state = MouseState::NONE;
 	Uint32 mouse_time = SDL_GetTicks();
+	int mouse_scroll;
 
 	// Main loop
 	while (game_loop)
@@ -168,12 +179,12 @@ int main(int argc, char* argv[])
 				break;
 
 			case SDL_MOUSEBUTTONUP:
+				mouse_release = true;
 				mouse_down = false;
 				mouse_state &= !MouseState::DRAG_GRID; // Mouse up signals end of drag
 				mouse_state &= !MouseState::DRAG_BUILDING;
 				drag_building = false;
 				mouse_in_motion = false;
-				king::Farmhouse::drag_ptr = nullptr;
 
 				if (SDL_GetTicks() - mouse_time <= 200) // <= 200 ms for mouse press
 					mouse_state |= MouseState::PRESS;
@@ -182,6 +193,7 @@ int main(int argc, char* argv[])
 
 			case SDL_MOUSEWHEEL:
 				mouse_state |= MouseState::SCROLL;
+				mouse_scroll = event.wheel.y;
 				break;
 
 			case SDL_QUIT:
@@ -212,49 +224,50 @@ int main(int argc, char* argv[])
 		int mouse_x, mouse_y;
 		SDL_GetMouseState(&mouse_x, &mouse_y);
 
-		switch (mouse_state)
+		if (mouse_state & MouseState::SCROLL)
 		{
-		case MouseState::SCROLL: {
-			int scroll = event.wheel.y;
-			float new_scale = scale + scroll * 0.1f;
+			float new_scale = scale + mouse_scroll * 0.1f;
+			if (new_scale >= MIN_SCALE && new_scale <= MAX_SCALE)
+			{
+				float scale_ratio = new_scale / scale;
+				grid.mouse_wheel(mouse_x, mouse_y, scale_ratio);
 
-			if (new_scale < MIN_SCALE || new_scale > MAX_SCALE)
-				break;
+				for (auto& farmhouse : farmhouses)
+				{
+					farmhouse.mouse_wheel(mouse_x, mouse_y, scale_ratio);
+				}
 
-			float scale_ratio = new_scale / scale;
-			grid.mouse_wheel(mouse_x, mouse_y, scale_ratio);
-
-			for (auto& farmhouse : farmhouses)
-				farmhouse.mouse_wheel(mouse_x, mouse_y, scale_ratio);
-
-			scale = new_scale;
+				scale = new_scale;
+			}
 
 			// Mouse scroll is a one time thing, so we clear mouse scroll after this
 			mouse_state &= ~MouseState::SCROLL;
-			break;
 		}
-		case MouseState::PRESS: {
+
+		if (mouse_state & MouseState::PRESS)
+		{
 			for (auto& farmhouse : farmhouses)
 			{
 				if (farmhouse.mouse_press(mouse_x, mouse_y))
-					farmhouse.mouse_press_update();
+					wheat += farmhouse.mouse_press_update();
 			}
 
 			// Mouse press is a one time thing, so we clear mouse press after this
-			mouse_state &= !MouseState::PRESS;
-			break;
+			mouse_state &= ~MouseState::PRESS;
 		}
-		case MouseState::DRAG_GRID: {
+
+		if (mouse_state & MouseState::DRAG_GRID)
+		{
 			float delta_x = mouse_x - drag_start_x;
 			float delta_y = mouse_y - drag_start_y;
 
 			if (end_drag_x + delta_x < -screen_width / 2)
 				stop_drag = 1;
-			if (end_drag_x + delta_x > screen_width / 2)
+			else if (end_drag_x + delta_x > screen_width / 2)
 				stop_drag = -1;
-			if (end_drag_y + delta_y < -screen_height / 2)
+			else if (end_drag_y + delta_y < -screen_height / 2)
 				stop_drag = 2;
-			if (end_drag_y + delta_y > screen_height / 2)
+			else if (end_drag_y + delta_y > screen_height / 2)
 				stop_drag = -2;
 
 			end_drag_x += delta_x;
@@ -267,21 +280,26 @@ int main(int argc, char* argv[])
 
 			drag_start_x = mouse_x;
 			drag_start_y = mouse_y;
-			break;
 		}
-		case MouseState::DRAG_BUILDING: {
+
+		if (mouse_state & MouseState::DRAG_BUILDING)
+		{
 			float delta_x = mouse_x - drag_start_x;
 			float delta_y = mouse_y - drag_start_y;
 
 			king::Farmhouse::drag_ptr->mouse_drag(delta_x, delta_y, farmhouses, scale);
 			drag_start_x = mouse_x;
 			drag_start_y = mouse_y;
-			break;
 		}
-		case MouseState::RELEASE: {
-			king::Farmhouse::drag_ptr = nullptr;
-			break;
-		}
+
+		if (mouse_release)
+		{
+			if (king::Farmhouse::drag_ptr)
+			{
+				king::Farmhouse::drag_ptr->mouse_release();
+				king::Farmhouse::drag_ptr = nullptr;
+			}
+			mouse_release = false;
 		}
 
 		if (stop_drag != 0)
@@ -349,23 +367,6 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		//// Handle mouse drag building
-		//if (SDL_GetTicks() - mouse_press_time >= 200 && mouse_down && !mouse_in_motion && !king::Farmhouse::drag_ptr)
-		//{
-		//	// If mouse has been pressed for 200 ms, then assume player is trying to select a building
-
-		//	int mx, my;
-		//	SDL_GetMouseState(&mx, &my);
-
-		//	for (auto& farmhouse : farmhouses)
-		//	{
-		//		if (farmhouse.mouse_press(mx, my))
-		//			break;
-		//	}
-
-		//	mouse_press_time = SDL_GetTicks();
-		//}
-
 		// Render frame
 
 		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -380,6 +381,14 @@ int main(int argc, char* argv[])
 			farmhouse.render(renderer, scale);
 		}
 
+		// Resource bar
+		SDL_Rect resource_bar{ 0, 0, screen_width, screen_height / 12 };
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		SDL_RenderDrawRect(renderer, &resource_bar);
+		SDL_RenderFillRect(renderer, &resource_bar);
+		FC_Draw(font, renderer, 0, screen_height / 24 - screen_height / 48, "Wheat: %d", wheat);
+		FC_Draw(font, renderer, 300, screen_height / 24 - screen_height / 48, "Wood: %d", wood);
+
 		SDL_RenderPresent(renderer);
 
 		// Delay to limit frame rate
@@ -393,6 +402,7 @@ int main(int argc, char* argv[])
 	//SDL_RemoveTimer(timerID); 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+	FC_FreeFont(font);
 	IMG_Quit();
 	SDL_Quit();
 	return 0;

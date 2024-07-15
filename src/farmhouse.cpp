@@ -20,8 +20,8 @@ king::Farmhouse::Farmhouse(
 	, offset_x(-1), offset_y(-1)
 	, grid_snap_vertices(), absolute_vertices()
 	, start_mouse_drag_x(-1), start_mouse_drag_y(-1)
-	, start_grid_snap_vertices(), start_absolute_vertices()
-	, display_resource(false),  resource_texture(nullptr)
+	, record_start_vertices(true), start_grid_snap_vertices(), start_absolute_vertices()
+	, display_resource(false), resource_texture(nullptr)
 	, resource_texture_width(-1), resource_texture_height(-1)
 	, resource_amount(0), resource_per_sec(5)
 {
@@ -151,30 +151,20 @@ bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, fl
 bool king::Farmhouse::mouse_press(float mx, float my)
 {
 	return is_point_in_rhombus(grid_snap_vertices, mx, my);
-
-	/*if (!is_point_in_rhombus(grid_snap_vertices, mx, my))
-		return false;
-
-	Farmhouse::drag_ptr = this;
-
-	clr = SDL_Colour{ 0, 255, 0, 255 };
-
-	start_mouse_drag_x = mx;
-	start_mouse_drag_y = my;
-
-	start_grid_snap_vertices = grid_snap_vertices;
-	start_absolute_vertices = absolute_vertices;
-
-	return true;*/
 }
 
-void king::Farmhouse::mouse_press_update()
+int king::Farmhouse::mouse_press_update()
 {
 	if (display_resource)
 	{
-		resource_amount = 0;
 		display_resource = false;
+
+		int resource_tmp = resource_amount;
+		resource_amount = 0;
+		return resource_tmp;
 	}
+
+	return 0;
 }
 
 bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const
@@ -194,8 +184,13 @@ bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _ve
 
 void king::Farmhouse::mouse_drag(float dx, float dy, std::forward_list<Farmhouse> const& farmhouses, float scale)
 {
-	//int dx = mx - start_mouse_drag_x;
-	//int dy = my - start_mouse_drag_y;
+	if (record_start_vertices)
+	{
+		record_start_vertices = false;
+
+		start_grid_snap_vertices = grid_snap_vertices;
+		start_absolute_vertices = absolute_vertices;
+	}
 
 	for (int i = 0; i < grid_snap_vertices.size(); ++i)
 	{
@@ -235,9 +230,6 @@ void king::Farmhouse::mouse_drag(float dx, float dy, std::forward_list<Farmhouse
 		}
 	}
 
-	//start_mouse_drag_x = mx;
-	//start_mouse_drag_y = my;
-
 	// Update colour
 
 	clr = SDL_Colour{ 0, 255, 0, 255 };
@@ -261,6 +253,7 @@ void king::Farmhouse::mouse_release()
 		absolute_vertices = start_absolute_vertices;
 	}
 
+	record_start_vertices = true;
 	clr = SDL_Colour{ 0, 0, 0, 0 };
 }
 
