@@ -50,4 +50,9 @@ There's this upcoming third person Steam game called [Kingmakers](https://store.
 
 ### Technical Information
 
-Made using C++ 17, [SDL 2.30.3](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.3), [SDL_ttf 2.22.0](https://github.com/libsdl-org/SDL_ttf/releases/tag/release-2.22.0), and [SDL_image 2.8.2](https://github.com/libsdl-org/SDL_image/releases/tag/release-2.8.2). Models made using Blender. Developed on Visual Studio using CMake.
+`C++20`, `CMake`, `Visual Studio`
+[SDL 2.30.3](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.3)
+[SDL_ttf 2.22.0](https://github.com/libsdl-org/SDL_ttf/releases/tag/release-2.22.0)
+[SDL_image 2.8.2](https://github.com/libsdl-org/SDL_image/releases/tag/release-2.8.2)
+[SDL_FontCache](https://github.com/grimfang4/SDL_FontCache)
+Models made with `Blender`
