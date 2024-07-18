@@ -79,8 +79,8 @@ king::Farmhouse::Farmhouse(
 	{
 		for (int j = 0; j < grid.width; ++j)
 		{
-			if (dist(grid.data[i][j].x, grid.data[i][j].y, pos.x, pos.y) <
-				dist(grid.data[cy][cx].x, grid.data[cy][cx].y, pos.x, pos.y))
+			if (dist(grid.data[i][j].x * _scale, grid.data[i][j].y * _scale, pos.x, pos.y) <
+				dist(grid.data[cy][cx].x * _scale, grid.data[cy][cx].y * _scale, pos.x, pos.y))
 			{
 				cx = j;
 				cy = i;
@@ -89,13 +89,13 @@ king::Farmhouse::Farmhouse(
 	}
 
 	grid_snap_vertices = {
-		SDL_Vertex{ grid.data[cy][cx].x + 0.0f,	  grid.data[cy][cx].y - 62.5f	},	 // top
-		SDL_Vertex{ grid.data[cy][cx].x	+ 123.5f, grid.data[cy][cx].y + 25		},	 // right
-		SDL_Vertex{ grid.data[cy][cx].x	- 0.0f,	  grid.data[cy][cx].y + 112.5f	},	 // bottom
-		SDL_Vertex{ grid.data[cy][cx].x - 123.5f, grid.data[cy][cx].y + 25		} }; // left
+		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * _scale,	  (grid.data[cy][cx].y - 62.5f	) * _scale },	 // top
+		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale },	 // right
+		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * _scale,	  (grid.data[cy][cx].y + 112.5f	) * _scale },	 // bottom
+		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale } }; // left
 
 	offset_x = 0;
-	offset_y = 25;
+	offset_y = 25 ;
 
 	absolute_vertices = grid_snap_vertices;
 }
