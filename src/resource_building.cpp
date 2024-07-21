@@ -1,4 +1,4 @@
-#include "farmhouse.hpp"
+#include "resource_building.hpp"
 
 #include <math.h>
 
@@ -10,13 +10,30 @@ float dist(float x1, float y1, float x2, float y2)
 	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 }
 
-king::Farmhouse::Farmhouse(
+void resource_building_type_to_image(ResourceBuildingType type, std::string& image, std::string& image_resource)
+{
+	switch (type)
+	{
+	case ResourceBuildingType::FARMHOUSE:
+		image = "../../assets/farmhouse.png";
+		image_resource = "../../assets/wheat.png";
+		break;
+	case ResourceBuildingType::LUMBERMILL:
+		image = "../../assets/lumbermill.png";
+		image_resource = "../../assets/wood.png";
+		break;
+	}
+}
+
+ResourceBuilding::ResourceBuilding(
+	ResourceBuildingType _type,
 	SDL_Renderer* renderer,
 	SDL_FPoint const& pos,
-	Grid const& grid,
+	king::Grid const& grid,
 	float _scale
 )
-	: texture(nullptr), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
+	: type(_type)
+	, texture(nullptr), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
 	, offset_x(-1), offset_y(-1)
 	, grid_snap_vertices(), absolute_vertices()
 	, start_mouse_drag_x(-1), start_mouse_drag_y(-1)
@@ -25,10 +42,14 @@ king::Farmhouse::Farmhouse(
 	, resource_texture_width(-1), resource_texture_height(-1)
 	, resource_amount(0), resource_per_sec(5)
 {
+	std::string image;
+	std::string resource_image;
+	resource_building_type_to_image(_type, image, resource_image);
+
 	/* Get texture */
 
 	// Load image using SDL_image
-	SDL_Surface* surface = IMG_Load("../../assets/farmhouse.png");
+	SDL_Surface* surface = IMG_Load(image.c_str());
 	if (!surface)
 	{
 		SDL_Log("Failed to load image: %s\n", IMG_GetError());
@@ -51,25 +72,25 @@ king::Farmhouse::Farmhouse(
 	/* Get resource texture */
 
 	// Load image using SDL_image
-	SDL_Surface* wheat_surface = IMG_Load("../../assets/wheat.png");
-	if (!wheat_surface)
+	SDL_Surface* resource_surface = IMG_Load(resource_image.c_str());
+	if (!resource_surface)
 	{
 		SDL_Log("Failed to load image: %s\n", IMG_GetError());
 		return;
 	}
 
-	resource_texture_width = wheat_surface->w;
-	resource_texture_height = wheat_surface->h;
+	resource_texture_width = resource_surface->w;
+	resource_texture_height = resource_surface->h;
 
 	// Convert surface to texture
-	resource_texture = SDL_CreateTextureFromSurface(renderer, wheat_surface);
+	resource_texture = SDL_CreateTextureFromSurface(renderer, resource_surface);
 	if (!resource_texture)
 	{
 		SDL_Log("Failed to create texture: %s\n", SDL_GetError());
 		return;
 	}
 
-	SDL_FreeSurface(wheat_surface);
+	SDL_FreeSurface(resource_surface);
 
 	/* Get grid position */
 
@@ -100,17 +121,12 @@ king::Farmhouse::Farmhouse(
 	absolute_vertices = grid_snap_vertices;
 }
 
-void king::Farmhouse::init_resource_timer()
+void ResourceBuilding::init_resource_timer()
 {
-	SDL_AddTimer(3000, Farmhouse::resource_callback, this);
+	SDL_AddTimer(3000, ResourceBuilding::resource_callback, this);
 }
 
-king::Farmhouse::~Farmhouse()
-{
-	//SDL_DestroyTexture(texture);
-}
-
-void king::Farmhouse::pan(float dx, float dy)
+void ResourceBuilding::pan(float dx, float dy)
 {
 	for (auto& vertex : grid_snap_vertices)
 		pan_point(vertex.position, dx, dy);
@@ -148,12 +164,12 @@ bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, fl
 	return collision;
 }
 
-bool king::Farmhouse::mouse_press(float mx, float my)
+bool ResourceBuilding::mouse_press(float mx, float my) const
 {
 	return is_point_in_rhombus(grid_snap_vertices, mx, my);
 }
 
-int king::Farmhouse::mouse_press_update()
+int ResourceBuilding::mouse_press_update()
 {
 	if (display_resource)
 	{
@@ -167,7 +183,7 @@ int king::Farmhouse::mouse_press_update()
 	return 0;
 }
 
-bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const
+bool ResourceBuilding::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const
 {
 	// assert(_vertices.size() == 4); // rhombus
 
@@ -182,7 +198,7 @@ bool king::Farmhouse::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _ve
 	return false;
 }
 
-void king::Farmhouse::mouse_drag(float dx, float dy, std::forward_list<Farmhouse> const& farmhouses, float scale)
+void ResourceBuilding::mouse_drag(float dx, float dy, std::forward_list<ResourceBuilding> const& farmhouses, float scale)
 {
 	if (record_start_vertices)
 	{
@@ -245,7 +261,7 @@ void king::Farmhouse::mouse_drag(float dx, float dy, std::forward_list<Farmhouse
 	}
 }
 
-void king::Farmhouse::mouse_release()
+void ResourceBuilding::mouse_release()
 {
 	if (clr.r == 255)
 	{
@@ -257,7 +273,7 @@ void king::Farmhouse::mouse_release()
 	clr = SDL_Colour{ 0, 0, 0, 0 };
 }
 
-void king::Farmhouse::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
+void ResourceBuilding::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 {
 	for (auto& vertex : grid_snap_vertices)
 	{
@@ -272,7 +288,7 @@ void king::Farmhouse::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 	}
 }
 
-void king::Farmhouse::render(SDL_Renderer* renderer, float scale)
+void ResourceBuilding::render(SDL_Renderer* renderer, float scale)
 {
 	for (auto& vertex : grid_snap_vertices)
 		vertex.color = clr;
@@ -315,14 +331,14 @@ void king::Farmhouse::render(SDL_Renderer* renderer, float scale)
 	}
 }
 
-void king::Farmhouse::update()
+void ResourceBuilding::update()
 {
 	resource_amount += resource_per_sec;
 }
 
-Uint32 king::Farmhouse::resource_callback(Uint32 interval, void* obj)
+Uint32 ResourceBuilding::resource_callback(Uint32 interval, void* obj)
 {
-	auto* farmhouse = static_cast<king::Farmhouse*>(obj);
+	auto* farmhouse = static_cast<ResourceBuilding*>(obj);
 	
 	farmhouse->resource_amount += farmhouse->resource_per_sec;
 	if (farmhouse->resource_amount >= 10)

@@ -7,11 +7,15 @@
 
 #include <forward_list>
 #include <array>
-#include <optional>
+#include <string>
 
-namespace king {
+enum class ResourceBuildingType
+{
+	FARMHOUSE,
+	LUMBERMILL,
+};
 
-class Farmhouse : private Object
+class ResourceBuilding : private king::Object
 {
 public:
 	/*
@@ -19,16 +23,15 @@ public:
 	 * @param pos The inital position used to calculate the grid snap
 	 *   position
 	 */
-	Farmhouse(
+	ResourceBuilding(
+		ResourceBuildingType _type,
 		SDL_Renderer* renderer,
 		SDL_FPoint const& pos,
-		Grid const& grid,
+		king::Grid const& grid,
 		float _scale
 	);
 
 	void init_resource_timer();
-
-	~Farmhouse();
 
 public:
 	void pan(float dx, float dy);
@@ -36,13 +39,13 @@ public:
 	/*
 	 * @returns True if mouse is pressed over the object
 	 */
-	bool mouse_press(float mx, float my);
+	bool mouse_press(float mx, float my) const;
 	int mouse_press_update();
 
 	/*
 	 * @param farmhouses For collision detection
 	 */
-	void mouse_drag(float mx, float my, std::forward_list<Farmhouse> const& farmhouses, float scale);
+	void mouse_drag(float mx, float my, std::forward_list<ResourceBuilding> const& farmhouses, float scale);
 	
 	void mouse_release();
 
@@ -61,9 +64,11 @@ private:
 	bool is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const;
 
 public:
-	inline static Farmhouse* drag_ptr = nullptr;
+	inline static ResourceBuilding* drag_ptr = nullptr;
 
 public:
+	ResourceBuildingType type;
+
 	// Display
 	SDL_Texture* texture;
 	int texture_width, texture_height;
@@ -88,5 +93,3 @@ public:
 	float resource_amount;
 	float resource_per_sec;
 };
-
-} // namespace king

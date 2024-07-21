@@ -1,5 +1,5 @@
 ﻿#include "grid.hpp"
-#include "farmhouse.hpp"
+#include "resource_building.hpp"
 
 #include "SDL.h"
 #include "SDL_image.h"
@@ -117,13 +117,14 @@ int main(int argc, char* argv[])
 
 	float scale = 1;
 
-	std::forward_list<king::Farmhouse> farmhouses{
-		king::Farmhouse(renderer, { 300, 200 }, grid, scale),
-		king::Farmhouse(renderer, { 600, 300 }, grid, scale)
+	std::forward_list<ResourceBuilding> resource_buildings{
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 300, 200 }, grid, scale),
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 600, 300 }, grid, scale),
+		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, { 900, 300 }, grid, scale)
 	};
 
-	for (auto& farmhouse : farmhouses)
-		farmhouse.init_resource_timer();
+	for (auto& resource_building : resource_buildings)
+		resource_building.init_resource_timer();
 
 	bool mouse_down = false;
 	bool mouse_in_motion = false;
@@ -148,8 +149,11 @@ int main(int argc, char* argv[])
 	SDL_Rect shop_bar{ 0, screen_height - 250, screen_width, 300 };
 	bool display_shop = false;
 
-	// Shop farmhouse
-	king::Farmhouse shop_farmhouse(renderer, SDL_FPoint{ 120, (float)shop_bar.y + 100 }, grid, scale);
+	std::forward_list<ResourceBuilding> shop_resource_buildings{
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, SDL_FPoint{ 120, (float)shop_bar.y + 100 }, grid, scale),
+		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, SDL_FPoint{ 400, (float)shop_bar.y + 100 }, grid, scale)
+	};
+
 	bool shop_new_farmhouse = false;
 
 	bool game_loop = true;
@@ -169,11 +173,11 @@ int main(int argc, char* argv[])
 				mouse_down = true;
 				mouse_time = SDL_GetTicks();
 
-				for (auto& farmhouse : farmhouses)
+				for (auto& resource_building : resource_buildings)
 				{
-					if (farmhouse.mouse_press(event.button.x, event.button.y))
+					if (resource_building.mouse_press(event.button.x, event.button.y))
 					{
-						king::Farmhouse::drag_ptr = &farmhouse;
+						ResourceBuilding::drag_ptr = &resource_building;
 						break;
 					}
 				}
@@ -205,7 +209,7 @@ int main(int argc, char* argv[])
 			// Ensure mouse drag is only assigned once so start mouse position isn't overriden
 			if (mouse_down && SDL_GetTicks() - mouse_time > 200 && !mouse_in_motion) // > 200 ms for mouse drag
 			{
-				if (!king::Farmhouse::drag_ptr)
+				if (!ResourceBuilding::drag_ptr)
 				{
 					mouse_in_motion = true;
 					mouse_state |= MouseState::DRAG_GRID;
@@ -233,9 +237,9 @@ int main(int argc, char* argv[])
 				float scale_ratio = new_scale / scale;
 				grid.mouse_wheel(mouse_x, mouse_y, scale_ratio);
 
-				for (auto& farmhouse : farmhouses)
+				for (auto& resource_building : resource_buildings)
 				{
-					farmhouse.mouse_wheel(mouse_x, mouse_y, scale_ratio);
+					resource_building.mouse_wheel(mouse_x, mouse_y, scale_ratio);
 				}
 
 				scale = new_scale;
@@ -247,13 +251,22 @@ int main(int argc, char* argv[])
 
 		if (mouse_state & MouseState::PRESS)
 		{
-			// Collect resource from farmhouse if clicked on
-			for (auto& farmhouse : farmhouses)
+			// Collect resource from resource_building if clicked on
+			for (auto& resource_building : resource_buildings)
 			{
-				if (farmhouse.mouse_press(mouse_x, mouse_y))
+				if (resource_building.mouse_press(mouse_x, mouse_y))
 				{
-					wheat += farmhouse.mouse_press_update();
-					break; // no overlapping farmhouse
+					switch (resource_building.type)
+					{
+					case ResourceBuildingType::FARMHOUSE:
+						wheat += resource_building.mouse_press_update();
+						break;
+					case ResourceBuildingType::LUMBERMILL:
+						wood += resource_building.mouse_press_update();
+						break;
+					}
+
+					// Resource buildings cannot overlap
 				}
 			}
 
@@ -268,15 +281,31 @@ int main(int argc, char* argv[])
 
 		if (mouse_state & MouseState::DRAG_GRID)
 		{
-			if (display_shop && shop_farmhouse.mouse_press(mouse_x, mouse_y))
+			if (display_shop)
 			{
-				display_shop = false;
-				farmhouses.push_front(king::Farmhouse(renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale));
-				farmhouses.front().init_resource_timer();
-				king::Farmhouse::drag_ptr = &farmhouses.front();
-				mouse_state &= ~MouseState::DRAG_GRID;
-				mouse_state |= MouseState::DRAG_BUILDING;
-				shop_new_farmhouse = true;
+				for (auto const& shop_resource_building : shop_resource_buildings)
+				{
+					if (shop_resource_building.mouse_press(mouse_x, mouse_y))
+					{
+						// Create new resource building
+						ResourceBuilding new_resource_building(shop_resource_building.type,
+							renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale);
+						new_resource_building.init_resource_timer();
+
+						// Add it to resource buildings
+						resource_buildings.push_front(new_resource_building);
+						resource_buildings.front().init_resource_timer();
+						ResourceBuilding::drag_ptr = &resource_buildings.front();
+
+						// Update shop and mouse state
+						display_shop = false;
+						mouse_state &= ~MouseState::DRAG_GRID;
+						mouse_state |= MouseState::DRAG_BUILDING;
+						shop_new_farmhouse = true;
+
+						break;
+					}
+				}
 			}
 			else
 			{
@@ -297,8 +326,8 @@ int main(int argc, char* argv[])
 
 				grid.mouse_drag(delta_x, delta_y);
 
-				for (auto& farmhouse : farmhouses)
-					farmhouse.pan(delta_x, delta_y);
+				for (auto& resource_building : resource_buildings)
+					resource_building.pan(delta_x, delta_y);
 
 				drag_start_x = mouse_x;
 				drag_start_y = mouse_y;
@@ -310,17 +339,17 @@ int main(int argc, char* argv[])
 			float delta_x = mouse_x - drag_start_x;
 			float delta_y = mouse_y - drag_start_y;
 
-			king::Farmhouse::drag_ptr->mouse_drag(delta_x, delta_y, farmhouses, scale);
+			ResourceBuilding::drag_ptr->mouse_drag(delta_x, delta_y, resource_buildings, scale);
 			drag_start_x = mouse_x;
 			drag_start_y = mouse_y;
 		}
 
 		if (mouse_state & MouseState::RELEASE)
 		{
-			if (king::Farmhouse::drag_ptr)
+			if (ResourceBuilding::drag_ptr)
 			{
-				king::Farmhouse::drag_ptr->mouse_release();
-				king::Farmhouse::drag_ptr = nullptr;
+				ResourceBuilding::drag_ptr->mouse_release();
+				ResourceBuilding::drag_ptr = nullptr;
 			}
 
 			mouse_state &= ~MouseState::RELEASE;
@@ -338,8 +367,8 @@ int main(int argc, char* argv[])
 				{
 					float dist_remaining = (end_drag_x)-(-screen_width / 2);
 					grid.mouse_drag(-dist_remaining * 0.1, 0);
-					for (auto& farmhouse : farmhouses)
-						farmhouse.pan(-dist_remaining * 0.1, 0);
+					for (auto& resource_building : resource_buildings)
+						resource_building.pan(-dist_remaining * 0.1, 0);
 					end_drag_x -= dist_remaining * 0.1;
 				}
 			}
@@ -353,8 +382,8 @@ int main(int argc, char* argv[])
 				{
 					float dist_remaining = -(end_drag_x)+(screen_width / 2);
 					grid.mouse_drag(dist_remaining * 0.1, 0);
-					for (auto& farmhouse : farmhouses)
-						farmhouse.pan(dist_remaining * 0.1, 0);
+					for (auto& resource_building : resource_buildings)
+						resource_building.pan(dist_remaining * 0.1, 0);
 					end_drag_x += dist_remaining * 0.1;
 				}
 			}
@@ -369,8 +398,8 @@ int main(int argc, char* argv[])
 				{
 					float dist_remaining = (end_drag_y)-(-screen_height / 2);
 					grid.mouse_drag(0, -dist_remaining * 0.1);
-					for (auto& farmhouse : farmhouses)
-						farmhouse.pan(0, -dist_remaining * 0.1);
+					for (auto& resource_building : resource_buildings)
+						resource_building.pan(0, -dist_remaining * 0.1);
 					end_drag_y -= dist_remaining * 0.1;
 				}
 			}
@@ -384,8 +413,8 @@ int main(int argc, char* argv[])
 				{
 					float dist_remaining = -(end_drag_y)+(screen_height / 2);
 					grid.mouse_drag(0, dist_remaining * 0.1);
-					for (auto& farmhouse : farmhouses)
-						farmhouse.pan(0, dist_remaining * 0.1);
+					for (auto& resource_building : resource_buildings)
+						resource_building.pan(0, dist_remaining * 0.1);
 					end_drag_y += dist_remaining * 0.1;
 				}
 			}
@@ -399,10 +428,10 @@ int main(int argc, char* argv[])
 		// Draw grid
 		grid.render(renderer, scale);
 
-		for (auto& farmhouse : farmhouses)
+		for (auto& resource_building : resource_buildings)
 		{
-			farmhouse.update();
-			farmhouse.render(renderer, scale);
+			resource_building.update();
+			resource_building.render(renderer, scale);
 		}
 
 		// Resource bar
@@ -422,7 +451,8 @@ int main(int argc, char* argv[])
 			FC_DrawColor(font, renderer, screen_width - 200, screen_height - shop_bar.h - 20, SDL_Colour{ 0, 0, 0, 255 }, "Close");
 			SDL_RenderFillRect(renderer, &shop_bar);
 
-			shop_farmhouse.render(renderer, 1);
+			for (auto& shop_resource_building : shop_resource_buildings)
+				shop_resource_building.render(renderer, 1);
 		}
 
 		SDL_RenderPresent(renderer);
@@ -432,8 +462,8 @@ int main(int argc, char* argv[])
 		next_time += TICK_INTERVAL;
 	}
 
-	for (auto& farmhouse : farmhouses)
-		SDL_DestroyTexture(farmhouse.texture);
+	for (auto& resource_building : resource_buildings)
+		SDL_DestroyTexture(resource_building.texture);
 
 	//SDL_RemoveTimer(timerID); 
 	SDL_DestroyRenderer(renderer);
