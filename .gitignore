@@ -1,3 +1,6 @@
+# CMkae Build dir
+build/
+
 # Visual Studio directories
 .vs/
 out/

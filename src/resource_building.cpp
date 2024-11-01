@@ -4,6 +4,7 @@
 
 #include "SDL.h"
 #include "SDL_Image.h"
+#include "SDL_FontCache.h"
 
 float dist(float x1, float y1, float x2, float y2)
 {
@@ -30,7 +31,8 @@ ResourceBuilding::ResourceBuilding(
 	SDL_Renderer* renderer,
 	SDL_FPoint const& pos,
 	king::Grid const& grid,
-	float _scale
+	float _scale,
+	FC_Font* _font
 )
 	: type(_type)
 	, texture(nullptr), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
@@ -40,8 +42,14 @@ ResourceBuilding::ResourceBuilding(
 	, record_start_vertices(true), start_grid_snap_vertices(), start_absolute_vertices()
 	, display_resource(false), resource_texture(nullptr)
 	, resource_texture_width(-1), resource_texture_height(-1)
-	, resource_amount(0), resource_per_sec(5)
+	, resource_amount(0), resource_per_sec(5), resource_capacity(500)
+	, show_information(false), info_rect()
+	, animate(ANIMATE_Closed), information_width(0)
+	, font(_font)
 {
+	int screen_width, screen_height;
+	SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
+
 	std::string image;
 	std::string resource_image;
 	resource_building_type_to_image(_type, image, resource_image);
@@ -113,12 +121,17 @@ ResourceBuilding::ResourceBuilding(
 		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * _scale,	  (grid.data[cy][cx].y - 62.5f	) * _scale },	 // top
 		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale },	 // right
 		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * _scale,	  (grid.data[cy][cx].y + 112.5f	) * _scale },	 // bottom
-		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale } }; // left
+		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale } };	 // left
 
 	offset_x = 0;
 	offset_y = 25 ;
 
 	absolute_vertices = grid_snap_vertices;
+
+	info_rect.x = grid_snap_vertices[0].position.x;
+	info_rect.y = grid_snap_vertices[0].position.y - 100;
+	info_rect.w = 80;
+	info_rect.h = 80;
 }
 
 void ResourceBuilding::init_resource_timer()
@@ -164,13 +177,32 @@ bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, fl
 	return collision;
 }
 
-bool ResourceBuilding::mouse_press(float mx, float my) const
+bool ResourceBuilding::mouse_press(float mx, float my)
 {
-	return is_point_in_rhombus(grid_snap_vertices, mx, my);
+	bool is_clicked = is_point_in_rhombus(grid_snap_vertices, mx, my);
+
+	if (!is_clicked)
+	{
+		show_information = false;
+
+		if (animate == ANIMATE_Opened)
+			animate = ANIMATE_Closing;
+	}
+
+	return is_clicked;
 }
 
 int ResourceBuilding::mouse_press_update()
 {
+	if (animate == ANIMATE_Closed)
+	{
+		animate = ANIMATE_Opening;
+	}
+	if (animate == ANIMATE_Opened)
+	{
+		animate = ANIMATE_Closing;
+	}
+
 	if (display_resource)
 	{
 		display_resource = false;
@@ -259,18 +291,30 @@ void ResourceBuilding::mouse_drag(float dx, float dy, std::forward_list<Resource
 			break;
 		}
 	}
+
+	show_information = false;
 }
 
-void ResourceBuilding::mouse_release()
+bool ResourceBuilding::mouse_release()
 {
+	bool is_blocked = false;
+
+	
+
 	if (clr.r == 255)
 	{
 		grid_snap_vertices = start_grid_snap_vertices;
 		absolute_vertices = start_absolute_vertices;
+		
+		is_blocked = true;
 	}
 
 	record_start_vertices = true;
 	clr = SDL_Colour{ 0, 0, 0, 0 };
+
+	show_information = !show_information;
+
+	return is_blocked;
 }
 
 void ResourceBuilding::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
@@ -328,6 +372,77 @@ void ResourceBuilding::render(SDL_Renderer* renderer, float scale)
 		};
 
 		SDL_RenderCopyF(renderer, resource_texture, NULL, &dest_rect);
+	}
+
+	//if (show_information)
+		render_information(renderer, scale);
+}
+
+void ResourceBuilding::render_information(SDL_Renderer* renderer, float scale)
+{
+	int screen_width, screen_height;
+	SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
+
+	float information_width_max = screen_width * 0.25;
+	float information_width_speed = screen_width / 50;
+	
+	// Animate
+
+	if (animate == ANIMATE_Opening)
+	{
+		information_width += information_width_speed;
+		information_width = fmin(information_width, information_width_max);
+
+		if (information_width == information_width_max)
+			animate = ANIMATE_Opened;
+	}
+	if (animate == ANIMATE_Closing)
+	{
+		information_width -= information_width_speed;
+		information_width = fmax(information_width, 0);
+
+		if (information_width == 0)
+			animate = ANIMATE_Closed;
+	}
+
+	// Render background
+
+	if (animate != ANIMATE_Closed)
+	{
+		SDL_FRect background_rect{
+			screen_width - information_width, 0,
+			information_width, screen_height
+		};
+		SDL_SetRenderDrawColor(renderer, 117, 71, 0, 255);
+		SDL_RenderFillRectF(renderer, &background_rect);
+
+		float x = (screen_width - information_width) + (information_width_max / 2);
+		float y = screen_height / 12;
+		FC_DrawAlign(font, renderer, x, y, FC_ALIGN_CENTER, "FARMHOUSE");
+
+		for (int i = 0; i < 2; ++i)
+		{
+			SDL_Rect icon_rect{
+				(screen_width - information_width) + (i * 50) + 15, screen_height / 6,
+				50, 50
+			};
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+			SDL_RenderFillRect(renderer, &icon_rect);
+
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderDrawRect(renderer, &icon_rect);
+		}
+
+		SDL_Rect info_rect{
+			screen_width - information_width + 15, screen_height / 6 + 50,
+			information_width_max - 30, screen_height - (screen_height / 6 + 50) - 15
+		};
+
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		SDL_RenderFillRect(renderer, &info_rect);
+
+		FC_DrawAlign(font, renderer, screen_width - information_width + 30, screen_height / 6 + 50, FC_ALIGN_LEFT, "Production Rate / Hour %d", resource_per_sec);
+		FC_DrawAlign(font, renderer, screen_width - information_width + 30, screen_height / 6 + 100, FC_ALIGN_LEFT, "Production Capacity %d", resource_capacity);
 	}
 }
 

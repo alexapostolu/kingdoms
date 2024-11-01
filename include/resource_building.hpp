@@ -4,6 +4,7 @@
 #include "grid.hpp"
 
 #include "SDL.h"
+#include "SDL_FontCache.h"
 
 #include <forward_list>
 #include <array>
@@ -28,7 +29,8 @@ public:
 		SDL_Renderer* renderer,
 		SDL_FPoint const& pos,
 		king::Grid const& grid,
-		float _scale
+		float _scale,
+		FC_Font* font
 	);
 
 	void init_resource_timer();
@@ -37,9 +39,15 @@ public:
 	void pan(float dx, float dy);
 
 	/*
-	 * @returns True if mouse is pressed over the object
+	 * If mouse is pressed over object, returns True. Otherwise, handles mouse
+	 * not pressed over object and returns False.
 	 */
-	bool mouse_press(float mx, float my) const;
+	bool mouse_press(float mx, float my);
+
+	/*
+	 * Handles updates for when mouse is pressed over object and returns
+	 * the amount of resources collected from the mouse press.
+	 */
 	int mouse_press_update();
 
 	/*
@@ -47,7 +55,7 @@ public:
 	 */
 	void mouse_drag(float mx, float my, std::forward_list<ResourceBuilding> const& farmhouses, float scale);
 	
-	void mouse_release();
+	bool mouse_release();
 
 	/*
 	 * Zoom based on mouse position and scale
@@ -55,6 +63,8 @@ public:
 	void mouse_wheel(int mouse_x, int mouse_y, float scale_ratio);
 
 	void render(SDL_Renderer* renderer, float scale);
+
+	void render_information(SDL_Renderer* renderer, float scale);
 
 	void update();
 
@@ -92,4 +102,19 @@ public:
 	bool display_resource;
 	float resource_amount;
 	float resource_per_sec;
+	float resource_capacity;
+
+	bool show_information;
+	SDL_FRect info_rect;
+
+private:
+	float information_width;
+	FC_Font* font;
+
+	enum {
+		ANIMATE_Closed,
+		ANIMATE_Opening,
+		ANIMATE_Opened,
+		ANIMATE_Closing
+	} animate;
 };

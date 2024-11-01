@@ -43,19 +43,6 @@ int get_screen_width()
 #endif
 }
 
-#define TICK_INTERVAL 30
-
-Uint32 next_time;
-
-Uint32 time_left(void)
-{
-	Uint32 now = SDL_GetTicks();
-	if (next_time <= now)
-		return 0;
-	else
-		return next_time - now;
-}
-
 king::Grid grid(40, 60);
 
 /* Scroll */
@@ -118,9 +105,9 @@ int main(int argc, char* argv[])
 	float scale = 1;
 
 	std::forward_list<ResourceBuilding> resource_buildings{
-		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 300, 200 }, grid, scale),
-		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 600, 300 }, grid, scale),
-		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, { 900, 300 }, grid, scale)
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 300, 200 }, grid, scale, font),
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 600, 300 }, grid, scale, font),
+		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, { 900, 300 }, grid, scale, font)
 	};
 
 	for (auto& resource_building : resource_buildings)
@@ -135,8 +122,6 @@ int main(int argc, char* argv[])
 	int wheat = 0;
 	int wood = 0;
 
-	next_time = SDL_GetTicks() + TICK_INTERVAL;
-
 	Uint32 mouse_press_time = 0;
 
 	int stop_drag = 0;
@@ -150,11 +135,11 @@ int main(int argc, char* argv[])
 	bool display_shop = false;
 
 	std::forward_list<ResourceBuilding> shop_resource_buildings{
-		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, SDL_FPoint{ 120, (float)shop_bar.y + 100 }, grid, scale),
-		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, SDL_FPoint{ 400, (float)shop_bar.y + 100 }, grid, scale)
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, SDL_FPoint{ 120, (float)shop_bar.y + 100 }, grid, scale, font),
+		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, SDL_FPoint{ 400, (float)shop_bar.y + 100 }, grid, scale, font)
 	};
 
-	bool shop_new_farmhouse = false;
+	bool new_building = false;
 
 	bool game_loop = true;
 	SDL_Event event;
@@ -267,6 +252,7 @@ int main(int argc, char* argv[])
 					}
 
 					// Resource buildings cannot overlap
+					break;
 				}
 			}
 
@@ -283,14 +269,15 @@ int main(int argc, char* argv[])
 		{
 			if (display_shop)
 			{
-				for (auto const& shop_resource_building : shop_resource_buildings)
+				for (auto& shop_resource_building : shop_resource_buildings)
 				{
 					if (shop_resource_building.mouse_press(mouse_x, mouse_y))
 					{
 						// Create new resource building
-						ResourceBuilding new_resource_building(shop_resource_building.type,
-							renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale);
-						new_resource_building.init_resource_timer();
+						ResourceBuilding new_resource_building(
+							shop_resource_building.type,
+							renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale,
+							font);
 
 						// Add it to resource buildings
 						resource_buildings.push_front(new_resource_building);
@@ -301,7 +288,7 @@ int main(int argc, char* argv[])
 						display_shop = false;
 						mouse_state &= ~MouseState::DRAG_GRID;
 						mouse_state |= MouseState::DRAG_BUILDING;
-						shop_new_farmhouse = true;
+						new_building = true;
 
 						break;
 					}
@@ -348,8 +335,12 @@ int main(int argc, char* argv[])
 		{
 			if (ResourceBuilding::drag_ptr)
 			{
-				ResourceBuilding::drag_ptr->mouse_release();
+				bool is_blocked = ResourceBuilding::drag_ptr->mouse_release();
+				if (is_blocked && new_building)
+					resource_buildings.pop_front();
+
 				ResourceBuilding::drag_ptr = nullptr;
+				new_building = false;
 			}
 
 			mouse_state &= ~MouseState::RELEASE;
@@ -422,7 +413,7 @@ int main(int argc, char* argv[])
 
 		// Render frame
 
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		SDL_SetRenderDrawColor(renderer, 82, 166, 84, 255);
 		SDL_RenderClear(renderer);
 
 		// Draw grid
@@ -456,10 +447,6 @@ int main(int argc, char* argv[])
 		}
 
 		SDL_RenderPresent(renderer);
-
-		// Delay to limit frame rate
-		SDL_Delay(time_left());	
-		next_time += TICK_INTERVAL;
 	}
 
 	for (auto& resource_building : resource_buildings)
