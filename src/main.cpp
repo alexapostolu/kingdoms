@@ -43,7 +43,7 @@ int get_screen_width()
 #endif
 }
 
-king::Grid grid(40, 60);
+Grid grid(40, 60);
 
 /* Scroll */
 
@@ -244,10 +244,10 @@ int main(int argc, char* argv[])
 					switch (resource_building.type)
 					{
 					case ResourceBuildingType::FARMHOUSE:
-						wheat += resource_building.mouse_press_update();
+						wheat += resource_building.mouse_press_update(scale);
 						break;
 					case ResourceBuildingType::LUMBERMILL:
-						wood += resource_building.mouse_press_update();
+						wood += resource_building.mouse_press_update(scale);
 						break;
 					}
 

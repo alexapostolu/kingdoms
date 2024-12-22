@@ -1,6 +1,7 @@
 #pragma once
 
 #include "object.hpp"
+#include "resource_animation.hpp"
 #include "grid.hpp"
 
 #include "SDL.h"
@@ -9,6 +10,7 @@
 #include <forward_list>
 #include <array>
 #include <string>
+#include <tuple>
 
 enum class ResourceBuildingType
 {
@@ -16,7 +18,8 @@ enum class ResourceBuildingType
 	LUMBERMILL,
 };
 
-class ResourceBuilding : private king::Object
+class ResourceBuilding
+	: private Object
 {
 public:
 	/*
@@ -26,9 +29,9 @@ public:
 	 */
 	ResourceBuilding(
 		ResourceBuildingType _type,
-		SDL_Renderer* renderer,
+		SDL_Renderer* _renderer,
 		SDL_FPoint const& pos,
-		king::Grid const& grid,
+		Grid const& grid,
 		float _scale,
 		FC_Font* font
 	);
@@ -48,7 +51,7 @@ public:
 	 * Handles updates for when mouse is pressed over object and returns
 	 * the amount of resources collected from the mouse press.
 	 */
-	int mouse_press_update();
+	int mouse_press_update(float scale);
 
 	/*
 	 * @param farmhouses For collision detection
@@ -74,10 +77,12 @@ private:
 	bool is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const;
 
 public:
-	inline static ResourceBuilding* drag_ptr = nullptr;
+	static ResourceBuilding* drag_ptr;
 
 public:
 	ResourceBuildingType type;
+
+	SDL_Renderer* renderer;
 
 	// Display
 	SDL_Texture* texture;
@@ -96,9 +101,6 @@ public:
 	std::array<SDL_Vertex, 4> start_grid_snap_vertices;
 	std::array<SDL_Vertex, 4> start_absolute_vertices;
 
-	// Resourse Generation
-	SDL_Texture* resource_texture;
-	int resource_texture_width, resource_texture_height;
 	bool display_resource;
 	float resource_amount;
 	float resource_per_sec;
@@ -108,13 +110,28 @@ public:
 	SDL_FRect info_rect;
 
 private:
+	/*
+	 * Resource icon and collection animation.
+	 */
+	ResourceAnimation resource_animation;
+	bool animate_collection;
+
+	/*
+	 * Information card.
+	 */
 	float information_width;
 	FC_Font* font;
+	FC_Font* info_tab_font;
+	enum class InfoTab {
+		Info,
+		Stats,
+		COUNT
+	} tab;
 
-	enum {
-		ANIMATE_Closed,
-		ANIMATE_Opening,
-		ANIMATE_Opened,
-		ANIMATE_Closing
+	enum class Animate {
+		Closed,
+		Opening,
+		Opened,
+		Closing
 	} animate;
 };

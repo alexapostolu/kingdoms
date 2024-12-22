@@ -2,7 +2,7 @@
 
 #include "SDL.h"
 
-king::Grid::Grid(int _width, int _height)
+Grid::Grid(int _width, int _height)
 	: width(_width), height(_height), data(nullptr)
 {
 	data = new SDL_FPoint*[height];
@@ -18,7 +18,7 @@ king::Grid::Grid(int _width, int _height)
 	}
 }
 
-king::Grid::~Grid()
+Grid::~Grid()
 {
 	for (int y = 0; y < height; ++y)
 		delete[] data[y];
@@ -26,7 +26,7 @@ king::Grid::~Grid()
 	delete[] data;
 }
 
-void king::Grid::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
+void Grid::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 {
 	for (int i = 0; i < height; ++i)
 	{
@@ -38,7 +38,7 @@ void king::Grid::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 	}
 }
 
-void king::Grid::mouse_drag(float dx, float dy)
+void Grid::mouse_drag(float dx, float dy)
 {
 	for (int i = 0; i < height; ++i)
 	{
@@ -49,9 +49,10 @@ void king::Grid::mouse_drag(float dx, float dy)
 	}
 }
 
-void king::Grid::render(SDL_Renderer* renderer, float scale)
+void Grid::render(SDL_Renderer* renderer, float scale)
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
 	for (int i = 0; i < height; ++i)
 	{
 		for (int j = 0; j < width; ++j)

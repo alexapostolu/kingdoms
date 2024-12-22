@@ -2,8 +2,6 @@
 
 #include "SDL.h"
 
-namespace king {
-
 /*
  * The standard action of an Object is to handle house presses (eg. resource collection),
  * mouse drag (eg. drag and rellocate) and mouse release (clear grid background).
@@ -21,5 +19,3 @@ class Object
 protected:
 	void pan_point(SDL_FPoint& point, float dx, float dy);
 };
-
-} // namespace king

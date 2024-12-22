@@ -4,8 +4,6 @@
 
 #include "SDL.h"
 
-namespace king {
-
 class Grid : private Object
 {
 public:
@@ -21,5 +19,3 @@ public:
 	int width, height;
 	SDL_FPoint** data;
 };
-
-}
