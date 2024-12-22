@@ -44,6 +44,8 @@ The upside to focusing on user interaction is I don't have to spend hours on Ble
 
 I plan to do this by first allowing the user to select a group of troop and mobilize them elsewhere and change their target. I will also allow the user to control a special "hero" troop. In addition, for each battle, there will be strategic structures, for example a small tower with ground troops at the base and archers at the top. In this case, your groud troop must first defeat the enemy's group troops, before spending time climbing up the stairs to the enemy's archers. Meanwhile, your archers can target their archers instantly. This has some implications, first the single player AI must be advanced. Secondly, I need to get he right perspective to ensure the important fights are not blocked by structures (maybe allowing camera panning?). This also means a player's base is two parts. Non defensive and defensive. Defensive is the defending troops and structures their troop will fight on against an incoming attack. And the non defensive is everything else, resource collection, town hall, barracks, etc.
 
+I will also consider having reasource buildings produce more loot to give the game more of an idle feel, as now you don't have to constantly attack other bases to gain loot.
+
 ### Other
 
 Right now, the main user interaction is controlling a single troop in battle. I wonder if there is any other gameplay mechanics I can add that require user interaction.
