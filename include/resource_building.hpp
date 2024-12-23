@@ -15,7 +15,7 @@
 enum class ResourceBuildingType
 {
 	FARMHOUSE,
-	LUMBERMILL,
+	LUMBERMILL
 };
 
 class ResourceBuilding

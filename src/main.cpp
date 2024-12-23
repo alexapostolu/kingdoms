@@ -1,4 +1,6 @@
-﻿#include "grid.hpp"
+﻿#include "scene.hpp"
+
+#include "grid.hpp"
 #include "resource_building.hpp"
 
 #include "SDL.h"
@@ -60,6 +62,8 @@ namespace MouseState {
 		NONE = 0x00000
 	};
 }
+
+bool attack = false;
 
 int main(int argc, char* argv[])
 {
@@ -261,6 +265,9 @@ int main(int argc, char* argv[])
 			if (sqrt(pow(screen_width - 200 - mouse_x, 2) + pow(screen_height - 300 - mouse_y, 2)) < 100)
 				display_shop = false;
 
+			if (sqrt(pow(200 - mouse_x, 2) + pow(screen_height - 100 - mouse_y, 2)) < 100)
+				attack = !attack;
+
 			// Mouse press is a one time thing, so we clear mouse press after this
 			mouse_state &= ~MouseState::PRESS;
 		}
@@ -416,34 +423,43 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 82, 166, 84, 255);
 		SDL_RenderClear(renderer);
 
-		// Draw grid
-		grid.render(renderer, scale);
-
-		for (auto& resource_building : resource_buildings)
+		if (!attack)
 		{
-			resource_building.update();
-			resource_building.render(renderer, scale);
-		}
+			// Draw grid
+			grid.render(renderer, scale);
 
-		// Resource bar
-		SDL_Rect resource_bar{ 0, 0, screen_width, screen_height / 12 };
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderFillRect(renderer, &resource_bar);
-		FC_Draw(font, renderer, 0, screen_height / 24 - screen_height / 48, "Wheat: %d", wheat);
-		FC_Draw(font, renderer, 300, screen_height / 24 - screen_height / 48, "Wood: %d", wood);
+			for (auto& resource_building : resource_buildings)
+			{
+				resource_building.update();
+				resource_building.render(renderer, scale);
+			}
 
-		// Shop
-		if (!display_shop)
-		{
-			FC_DrawColor(font, renderer, screen_width - 200, screen_height - 100, SDL_Colour{0, 0, 0, 255}, "Shop");
+			// Resource bar
+			SDL_Rect resource_bar{ 0, 0, screen_width, screen_height / 12 };
+			SDL_RenderFillRect(renderer, &resource_bar);
+			FC_SetDefaultColor(font, SDL_Color{ 255, 255, 255, 255 });
+			FC_Draw(font, renderer, 0, screen_height / 24 - screen_height / 48, "Wheat: %d", wheat);
+			FC_Draw(font, renderer, 300, screen_height / 24 - screen_height / 48, "Wood: %d", wood);
+
+			// Shop
+			if (!display_shop)
+			{
+				FC_SetDefaultColor(font, SDL_Color{ 0, 0, 0, 255 });
+				FC_Draw(font, renderer, screen_width - 200, screen_height - 100, "Shop");
+				FC_Draw(font, renderer, 200, screen_height - 100, "Battle");
+			}
+			else
+			{
+				FC_DrawColor(font, renderer, screen_width - 200, screen_height - shop_bar.h - 20, SDL_Color{ 0, 0, 0, 255 }, "Close");
+				SDL_RenderFillRect(renderer, &shop_bar);
+
+				for (auto& shop_resource_building : shop_resource_buildings)
+					shop_resource_building.render(renderer, 1);
+			}
 		}
 		else
 		{
-			FC_DrawColor(font, renderer, screen_width - 200, screen_height - shop_bar.h - 20, SDL_Colour{ 0, 0, 0, 255 }, "Close");
-			SDL_RenderFillRect(renderer, &shop_bar);
-
-			for (auto& shop_resource_building : shop_resource_buildings)
-				shop_resource_building.render(renderer, 1);
+			FC_Draw(font, renderer, 200, screen_height - 100, "End");
 		}
 
 		SDL_RenderPresent(renderer);
@@ -452,7 +468,6 @@ int main(int argc, char* argv[])
 	for (auto& resource_building : resource_buildings)
 		SDL_DestroyTexture(resource_building.texture);
 
-	//SDL_RemoveTimer(timerID); 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	FC_FreeFont(font);

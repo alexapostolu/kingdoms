@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/out/build")
 
 # Add the include directory
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(
+	${PROJECT_SOURCE_DIR}/include
+	${PROJECT_SOURCE_DIR}/engine/include)
 
 # SDL2
 set(SDL2_DIR ${PROJECT_SOURCE_DIR}/external/SDL2)
@@ -25,3 +27,4 @@ include_directories(${SDL_fontcache_DIR})
 
 # src directory
 add_subdirectory(src)
+add_subdirectory(engine/src)
