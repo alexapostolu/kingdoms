@@ -1,4 +1,5 @@
 ﻿#include "scene.hpp"
+#include "base.hpp"
 
 #include "grid.hpp"
 #include "resource_building.hpp"
@@ -148,6 +149,17 @@ int main(int argc, char* argv[])
 	bool game_loop = true;
 	SDL_Event event;
 
+	Base base;
+	base.renderer = renderer;
+	base.screen_width = screen_width;
+	base.screen_height = screen_height;
+	base.font = font;
+	base.resource_buildings = resource_buildings;
+	base.shop_buildings = shop_resource_buildings;
+	base.grid = grid;
+
+	Scene* current_scene = &base;
+
 	// Main loop
 	while (game_loop)
 	{
@@ -198,6 +210,11 @@ int main(int argc, char* argv[])
 			// Ensure mouse drag is only assigned once so start mouse position isn't overriden
 			if (mouse_down && SDL_GetTicks() - mouse_time > 200 && !mouse_in_motion) // > 200 ms for mouse drag
 			{
+				int mouse_x, mouse_y;
+				SDL_GetMouseState(&mouse_x, &mouse_y);
+
+				current_scene->handle_mouse_drag_start(mouse_x, mouse_y);
+
 				if (!ResourceBuilding::drag_ptr)
 				{
 					mouse_in_motion = true;
@@ -240,25 +257,27 @@ int main(int argc, char* argv[])
 
 		if (mouse_state & MouseState::PRESS)
 		{
-			// Collect resource from resource_building if clicked on
-			for (auto& resource_building : resource_buildings)
-			{
-				if (resource_building.mouse_press(mouse_x, mouse_y))
-				{
-					switch (resource_building.type)
-					{
-					case ResourceBuildingType::FARMHOUSE:
-						wheat += resource_building.mouse_press_update(scale);
-						break;
-					case ResourceBuildingType::LUMBERMILL:
-						wood += resource_building.mouse_press_update(scale);
-						break;
-					}
+			current_scene->handle_mouse_click(mouse_x, mouse_y);
 
-					// Resource buildings cannot overlap
-					break;
-				}
-			}
+			// Collect resource from resource_building if clicked on
+			//for (auto& resource_building : resource_buildings)
+			//{
+			//	if (resource_building.mouse_press(mouse_x, mouse_y))
+			//	{
+			//		switch (resource_building.type)
+			//		{
+			//		case ResourceBuildingType::FARMHOUSE:
+			//			wheat += resource_building.mouse_press_update(scale);
+			//			break;
+			//		case ResourceBuildingType::LUMBERMILL:
+			//			wood += resource_building.mouse_press_update(scale);
+			//			break;
+			//		}
+
+			//		// Resource buildings cannot overlap
+			//		break;
+			//	}
+			//}
 
 			if (sqrt(pow(screen_width - 200 - mouse_x, 2) + pow(screen_height - 100 - mouse_y, 2)) < 100)
 				display_shop = true;
@@ -428,18 +447,18 @@ int main(int argc, char* argv[])
 			// Draw grid
 			grid.render(renderer, scale);
 
-			for (auto& resource_building : resource_buildings)
+			/*for (auto& resource_building : resource_buildings)
 			{
 				resource_building.update();
 				resource_building.render(renderer, scale);
-			}
+			}*/
 
 			// Resource bar
-			SDL_Rect resource_bar{ 0, 0, screen_width, screen_height / 12 };
-			SDL_RenderFillRect(renderer, &resource_bar);
-			FC_SetDefaultColor(font, SDL_Color{ 255, 255, 255, 255 });
-			FC_Draw(font, renderer, 0, screen_height / 24 - screen_height / 48, "Wheat: %d", wheat);
-			FC_Draw(font, renderer, 300, screen_height / 24 - screen_height / 48, "Wood: %d", wood);
+			//SDL_Rect resource_bar{ 0, 0, screen_width, screen_height / 12 };
+			//SDL_RenderFillRect(renderer, &resource_bar);
+			//FC_SetDefaultColor(font, SDL_Color{ 255, 255, 255, 255 });
+			//FC_Draw(font, renderer, 0, screen_height / 24 - screen_height / 48, "Wheat: %d", wheat);
+			//FC_Draw(font, renderer, 300, screen_height / 24 - screen_height / 48, "Wood: %d", wood);
 
 			// Shop
 			if (!display_shop)
@@ -461,6 +480,9 @@ int main(int argc, char* argv[])
 		{
 			FC_Draw(font, renderer, 200, screen_height - 100, "End");
 		}
+
+		current_scene->update();
+		current_scene->render();
 
 		SDL_RenderPresent(renderer);
 	}

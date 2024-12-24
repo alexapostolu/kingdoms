@@ -209,6 +209,7 @@ int ResourceBuilding::mouse_press_update(float scale)
 {
 	if (display_resource)
 	{
+		printf("hh\n");
 		resource_animation.init_animation(renderer, grid_snap_vertices[0].position.x, grid_snap_vertices[1].position.y, scale, resource_amount);
 
 		animate_collection = true;
@@ -464,7 +465,7 @@ Uint32 ResourceBuilding::resource_callback(Uint32 interval, void* obj)
 	auto* farmhouse = static_cast<ResourceBuilding*>(obj);
 	
 	farmhouse->resource_amount += farmhouse->resource_per_sec;
-	farmhouse->display_resource = farmhouse->resource_amount >= 250;
+	farmhouse->display_resource = farmhouse->resource_amount >= 50;
 
 	return interval;
 }
