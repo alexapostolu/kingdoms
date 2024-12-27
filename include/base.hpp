@@ -2,6 +2,7 @@
 
 #include "scene.hpp"
 #include "resource_building.hpp"
+#include "button.hpp"
 
 #include "SDL.h"
 
@@ -10,36 +11,22 @@
 class Base : public Scene
 {
 public:
-	Base();
+	Base(SDL_Window* _window, SDL_Renderer* _renderer, int sw, int sh);
 
 public:
-	void handle_scroll();
+	void handle_scroll(int scroll) override;
 
-	void handle_mouse_click(int mouse_x, int mouse_y);
+	void handle_mouse_click(int mouse_x, int mouse_y) override;
 
-	void handle_mouse_drag_start(int mouse_x, int mouse_y);
+	void handle_mouse_drag_start(int mouse_x, int mouse_y) override;
 
-	void handle_mouse_drag_duration(int mouse_x, int mouse_y);
+	void handle_mouse_drag_duration(int mouse_x, int mouse_y) override;
 
-	void handle_mouse_drag_end(int mouse_x, int mouse_y);
+	void handle_mouse_drag_end(int mouse_x, int mouse_y) override;
 
-	void update();
+	void update() override;
 
-	void render();
-
-	void switch_scene(scene_id next_id);
-
-	SDL_Renderer* renderer;
-	int screen_width;
-	int screen_height;
-	FC_Font* font;
-	std::forward_list<ResourceBuilding> resource_buildings;
-	std::forward_list<ResourceBuilding> shop_buildings;
-	Grid grid;
-	int drag_start_x;
-	int drag_start_y;
-	int end_drag_x = 0, end_drag_y = 0;
-	int stop_drag = 0;
+	void render() override;
 
 private:
 	/*
@@ -49,8 +36,24 @@ private:
 	ResourceBuilding* is_resource_building_clicked(int mouse_x, int mouse_y);
 
 	/*
+	 * 
+	 */
+	ResourceBuilding* is_shop_building_clicked(int mouse_x, int mouse_y);
+
+	/*
+	 * 
 	 */
 	void update_buildings();
+
+	/*
+	 * 
+	 */
+	void render_background();
+
+	/*
+	 * Renders all the buildings and their associated animations.
+	 */
+	void render_buildings();
 
 	/*
 	 * Renders the top bar displaying amount of resources.
@@ -58,22 +61,47 @@ private:
 	void render_resource_bar();
 
 	/*
-	 * Renders all the buildings and their associated animations.
+	 * 
 	 */
-	void render_buildings();
+	void render_shop();
 
 private:
+	int screen_width;
+	int screen_height;
+
+
+
+
 	unsigned int wheat;
 	unsigned int wood;
 
 	enum class Drag {
 		Building,
-		Grid,
-		NONE
+		Grid
 	} drag;
 
 	int drag_curr_x;
 	int drag_curr_y;
 
+	ResourceBuilding* drag_building;
+
 	bool display_shop;
+	SDL_Rect shop_bar;
+
+	std::forward_list<ResourceBuilding> resource_buildings;
+	std::forward_list<ResourceBuilding> shop_buildings;
+	Grid grid;
+	int drag_start_x;
+	int drag_start_y;
+	int end_drag_x = 0, end_drag_y = 0;
+	int stop_drag = 0;
+
+	bool new_building;
+
+	Button build_open;
+	Button build_close;
+
+	Button battle;
+
+	FC_Font* font;
 };

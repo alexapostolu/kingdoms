@@ -4,18 +4,15 @@
 
 #include "SDL.h"
 
-/*
- * Unique identifier for each scene.
- */
-using scene_id = uint8_t;
-
 class Scene
 {
 public:
+	Scene(SDL_Window* _window, SDL_Renderer* _renderer);
+
 	/*
 	 * Mouse wheel.
 	 */
-	virtual void handle_scroll() = 0;
+	virtual void handle_scroll(int scroll) = 0;
 
 	/*
 	 * Mouse press and release taking less than 200 ms
@@ -47,17 +44,13 @@ public:
 	 */
 	virtual void render() = 0;
 
-	/*
-	 * Switches the scene to next_id.
-	 */
-	virtual void switch_scene(scene_id next_id) = 0;
+public:
+	static Scene* current_scene;
+	static Scene* scenes[5];
 
 protected:
-	float scale = 1;
+	SDL_Window* window;
+	SDL_Renderer* renderer;
 
-private:
-	static SDL_Window* window;
-	static SDL_Renderer* renderer;
-
-	scene_id id;
+	float scale;
 };

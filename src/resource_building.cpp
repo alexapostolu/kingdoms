@@ -7,8 +7,6 @@
 #include "SDL_Image.h"
 #include "SDL_FontCache.h"
 
-ResourceBuilding* ResourceBuilding::drag_ptr = nullptr;
-
 float dist(float x1, float y1, float x2, float y2)
 {
 	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
@@ -205,20 +203,21 @@ bool ResourceBuilding::mouse_press(float mx, float my)
 	return is_clicked;
 }
 
-int ResourceBuilding::mouse_press_update(float scale)
+void ResourceBuilding::mouse_press_update(float scale, unsigned int& wheat, unsigned int& wood)
 {
 	if (display_resource)
 	{
-		printf("hh\n");
 		resource_animation.init_animation(renderer, grid_snap_vertices[0].position.x, grid_snap_vertices[1].position.y, scale, resource_amount);
 
 		animate_collection = true;
 		display_resource = false;
 
-		int resource_tmp = resource_amount;
-		resource_amount = 0;
+		if (type == ResourceBuildingType::FARMHOUSE)
+			wheat += resource_amount;
+		else if (type == ResourceBuildingType::LUMBERMILL)
+			wood += resource_amount;
 
-		return resource_tmp;
+		resource_amount = 0;
 	}
 	else
 	{
@@ -226,8 +225,6 @@ int ResourceBuilding::mouse_press_update(float scale)
 			animate = Animate::Opening;
 		else if (animate == Animate::Opened)
 			animate = Animate::Closing;
-
-		return 0;
 	}
 }
 

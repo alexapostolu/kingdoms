@@ -51,7 +51,7 @@ public:
 	 * Handles updates for when mouse is pressed over object and returns
 	 * the amount of resources collected from the mouse press.
 	 */
-	int mouse_press_update(float scale);
+	void mouse_press_update(float scale, unsigned int& wheat, unsigned int& wood);
 
 	/*
 	 * @param farmhouses For collision detection
@@ -75,9 +75,6 @@ public:
 
 private:
 	bool is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const;
-
-public:
-	static ResourceBuilding* drag_ptr;
 
 public:
 	ResourceBuildingType type;
