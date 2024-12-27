@@ -81,16 +81,23 @@ ResourceBuilding::ResourceBuilding(
 
 	SDL_FreeSurface(surface);
 
-	/* Get grid position */
+	/*
+	 * Convert the floating point position into a grid position.
+	 * 
+	 * To do this, look at the closest grid point to the building's leftist
+	 * point.
+	 */
 
 	// Get center grid tile
 	int cx = 0, cy = 0;
-	for (int i = 0; i < grid.height; ++i)
+	for (int i = 0; i < grid.side_length; ++i)
 	{
-		for (int j = 0; j < grid.width; ++j)
+		for (int j = 0; j < grid.side_length; ++j)
 		{
-			if (dist(grid.data[i][j].x * _scale, grid.data[i][j].y * _scale, pos.x, pos.y) <
-				dist(grid.data[cy][cx].x * _scale, grid.data[cy][cx].y * _scale, pos.x, pos.y))
+			//if (dist(grid.data[i][j].x * _scale, grid.data[i][j].y * _scale, pos.x, pos.y) <
+			//	dist(grid.data[cy][cx].x * _scale, grid.data[cy][cx].y * _scale, pos.x, pos.y))
+			if (dist(grid.data[i][j].x, grid.data[i][j].y, pos.x, pos.y) <
+				dist(grid.data[cy][cx].x, grid.data[cy][cx].y, pos.x, pos.y))
 			{
 				cx = j;
 				cy = i;
@@ -100,9 +107,9 @@ ResourceBuilding::ResourceBuilding(
 
 	grid_snap_vertices = {
 		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * _scale,	  (grid.data[cy][cx].y - 62.5f	) * _scale },	 // top
-		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale },	 // right
+		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale,  (grid.data[cy][cx].y + 25		) * _scale },	 // right
 		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * _scale,	  (grid.data[cy][cx].y + 112.5f	) * _scale },	 // bottom
-		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale, (grid.data[cy][cx].y + 25		) * _scale } };	 // left
+		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale,  (grid.data[cy][cx].y + 25		) * _scale } };	 // left
 
 	offset_x = 0;
 	offset_y = 25;

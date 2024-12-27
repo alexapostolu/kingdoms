@@ -18,8 +18,7 @@ enum class ResourceBuildingType
 	LUMBERMILL
 };
 
-class ResourceBuilding
-	: private Object
+class ResourceBuilding : private Object
 {
 public:
 	/*

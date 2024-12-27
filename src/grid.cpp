@@ -2,35 +2,46 @@
 
 #include "SDL.h"
 
-Grid::Grid(int _width, int _height)
-	: width(_width), height(_height), data(nullptr)
+const float rhombus_w = 35.0f;
+const float rhombus_h = 25.0f;
+
+Grid::Grid(int _side_length)
+	: side_length(_side_length)
+	, data(nullptr)
 {
-	data = new SDL_FPoint*[height];
-	for (int i = 0; i < height; ++i)
+	float starting_x = 0;
+	float starting_y = 0;
+
+	data = new SDL_FPoint*[side_length];
+	for (int i = 0; i < side_length; ++i)
 	{
-		data[i] = new SDL_FPoint[width];
-		for (int j = 0; j < width; ++j)
+		data[i] = new SDL_FPoint[side_length];
+		for (int j = 0; j < side_length; ++j)
 		{
-			data[i][j] = SDL_FPoint();
-			data[i][j].x = j * 35 + (i % 2 == 0 ? 0 : 17.5f);
-			data[i][j].y = i * 12.5f;
+			float x = starting_x + ((rhombus_w / 2) * j);
+			float y = starting_y + ((rhombus_h / 2) * j);
+
+			data[i][j] = { x, y };
 		}
+
+		starting_x -= rhombus_w / 2;
+		starting_y += rhombus_h / 2;
 	}
 }
 
 Grid::~Grid()
 {
-	for (int y = 0; y < height; ++y)
-		delete[] data[y];
+	for (int i = 0; i < side_length; ++i)
+		delete[] data[i];
 
 	delete[] data;
 }
 
 void Grid::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 {
-	for (int i = 0; i < height; ++i)
+	for (int i = 0; i < side_length; ++i)
 	{
-		for (int j = 0; j < width; ++j)
+		for (int j = 0; j < side_length; ++j)
 		{
 			data[i][j].x = (data[i][j].x - mouse_x) * scale_ratio + mouse_x;
 			data[i][j].y = (data[i][j].y - mouse_y) * scale_ratio + mouse_y;
@@ -40,12 +51,10 @@ void Grid::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 
 void Grid::mouse_drag(float dx, float dy)
 {
-	for (int i = 0; i < height; ++i)
+	for (int i = 0; i < side_length; ++i)
 	{
-		for (int j = 0; j < width; ++j)
-		{
+		for (int j = 0; j < side_length; ++j)
 			pan_point(data[i][j], dx, dy);
-		}
 	}
 }
 
@@ -53,14 +62,14 @@ void Grid::render(SDL_Renderer* renderer, float scale)
 {
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-	for (int i = 0; i < height; ++i)
+	for (int i = 0; i < side_length; ++i)
 	{
-		for (int j = 0; j < width; ++j)
+		for (int j = 0; j < side_length; ++j)
 		{
 			float x = data[i][j].x;
 			float y = data[i][j].y;
-			float w = 35 * scale;
-			float h = 25 * scale;
+			float w = rhombus_w * scale;
+			float h = rhombus_h * scale;
 			SDL_FPoint points[5] = {
 				{x,			y - h / 2},
 				{x + w / 2, y		 },

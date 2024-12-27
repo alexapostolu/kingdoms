@@ -42,4 +42,6 @@ private:
 	FC_Font* font;
 	Button end;
 	Button start;
+
+	std::vector<SDL_Rect> enemies;
 };

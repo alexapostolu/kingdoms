@@ -21,6 +21,8 @@ Battle::Battle(SDL_Window* _window, SDL_Renderer* _renderer, int sw, int sh)
 	t = SDL_CreateTextureFromSurface(renderer, surface);
 
 	pos.push_back({ 0, 0, 150, th / (tw / 150) });
+	enemies.push_back({ screen_width - 100, screen_height - 100, 150, th / (tw / 150) });
+	enemies.push_back({ screen_width - 100, screen_height - 400, 150, th / (tw / 150) });
 
 	SDL_FreeSurface(surface);
 }
