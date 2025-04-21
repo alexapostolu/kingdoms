@@ -5,12 +5,12 @@
 const float rhombus_w = 35.0f;
 const float rhombus_h = 25.0f;
 
-Grid::Grid(int _side_length)
+Grid::Grid(int _side_length, int screen_width_mid, int screen_height_mid)
 	: side_length(_side_length)
 	, data(nullptr)
 {
-	float starting_x = 0;
-	float starting_y = 0;
+	float starting_x = screen_width_mid;
+	float starting_y = screen_height_mid - (side_length * (rhombus_h / 2));
 
 	data = new SDL_FPoint*[side_length];
 	for (int i = 0; i < side_length; ++i)

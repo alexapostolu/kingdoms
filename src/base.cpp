@@ -6,27 +6,27 @@
 Base::Base(SDL_Window* _window, SDL_Renderer* _renderer, int sw, int sh)
 	: Scene(_window, _renderer)
 	, screen_width(sw), screen_height(sh)
-	, wheat(0), wood(0)
+	, grid(40, screen_width / 2, screen_height / 2)
 	, drag_building(nullptr)
-	, grid(40)
 	, display_shop(false), shop_bar({ 0, screen_height - 250, screen_width, 300 })
 	, font(FC_CreateFont())
 	, new_building(false)
 	, build_open({ sw * 0.85f, sh * 0.9f, sw * 0.1f, sh * 0.1f })
 	, build_close({ screen_width * 0.9f, screen_height * 0.6f, screen_width * 0.1f, screen_height * 0.1f })
 	, battle({ screen_width * 0.1f, screen_height * 0.9f, screen_width * 0.1f, screen_height * 0.1f })
+	, wheat(0), wood(0)
 {
 	FC_LoadFont(font, renderer, "../../assets/Cinzel.ttf", screen_height / 24, FC_MakeColor(255, 255, 255, 255), TTF_STYLE_NORMAL);
 
 	shop_buildings = {
-		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, SDL_FPoint{ 120, (float)shop_bar.y + 100 }, grid, scale, font),
-		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, SDL_FPoint{ 400, (float)shop_bar.y + 100 }, grid, scale, font)
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, SDL_FPoint{ 120, (float)shop_bar.y + 100 }, grid, scale, font, 3, 3),
+		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, SDL_FPoint{ 400, (float)shop_bar.y + 100 }, grid, scale, font, 4, 4)
 	};
 
 	resource_buildings = {
-		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 300, 200 }, grid, scale, font),
-		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 600, 300 }, grid, scale, font),
-		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, { 900, 300 }, grid, scale, font)
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 300, 200 }, grid, scale, font, 3, 3),
+		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 600, 300 }, grid, scale, font, 3, 3),
+		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, { 900, 300 }, grid, scale, font, 4, 4)
 
 	};
 	for (auto& resource_building : resource_buildings)
@@ -79,7 +79,7 @@ void Base::handle_mouse_drag_start(int mouse_x, int mouse_y)
 		ResourceBuilding new_resource_building(
 			drag_building->type,
 			renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale,
-			font
+			font, drag_building->tiles_x, drag_building->tiles_y
 		);
 
 		resource_buildings.push_front(new_resource_building);

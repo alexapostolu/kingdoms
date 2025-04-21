@@ -66,14 +66,10 @@ private:
 	void render_shop();
 
 private:
-	int screen_width;
-	int screen_height;
+	// [REMOVE]
+	int screen_width, screen_height;
 
-
-
-
-	unsigned int wheat;
-	unsigned int wood;
+	Grid grid;
 
 	enum class Drag {
 		Building,
@@ -84,19 +80,18 @@ private:
 	int drag_curr_y;
 
 	ResourceBuilding* drag_building;
+	bool new_building;
 
 	bool display_shop;
 	SDL_Rect shop_bar;
 
 	std::forward_list<ResourceBuilding> resource_buildings;
 	std::forward_list<ResourceBuilding> shop_buildings;
-	Grid grid;
+
 	int drag_start_x;
 	int drag_start_y;
 	int end_drag_x = 0, end_drag_y = 0;
 	int stop_drag = 0;
-
-	bool new_building;
 
 	Button build_open;
 	Button build_close;
@@ -104,4 +99,7 @@ private:
 	Button battle;
 
 	FC_Font* font;
+
+	unsigned int wheat;
+	unsigned int wood;
 };

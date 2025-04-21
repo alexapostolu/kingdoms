@@ -33,23 +33,26 @@ ResourceBuilding::ResourceBuilding(
 	SDL_FPoint const& pos,
 	Grid const& grid,
 	float _scale,
-	FC_Font* _font
+	FC_Font* _font,
+	int tile_x, int tile_y
 )
 	: type(_type)
 	, renderer(_renderer)
+	, grid(grid)
 	, texture(nullptr), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
 	, offset_x(-1), offset_y(-1)
 	, grid_snap_vertices(), absolute_vertices()
 	, start_mouse_drag_x(-1), start_mouse_drag_y(-1)
 	, record_start_vertices(true), start_grid_snap_vertices(), start_absolute_vertices()
 	, display_resource(false)
-	, resource_amount(0), resource_per_sec(1), resource_capacity(500)
+	, resource_amount(0), resource_per_sec(0), resource_capacity(500)
 	, show_information(false), info_rect()
 	, animate(Animate::Closed), information_width(0)
 	, font(_font)
 	, resource_animation(_type, _renderer), animate_collection(false)
 	, info_tab_font(FC_CreateFont())
 	, tab(InfoTab::Info)
+	, grid_spacing_x(0), grid_spacing_y(0) // Add these members to the class
 {
 	int screen_width, screen_height;
 	SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
@@ -58,9 +61,7 @@ ResourceBuilding::ResourceBuilding(
 	std::string resource_image;
 	resource_building_type_to_image(_type, image, resource_image);
 
-	/* Get texture */
-
-	// Load image using SDL_image
+	// Load texture (unchanged)
 	SDL_Surface* surface = IMG_Load(image.c_str());
 	if (!surface)
 	{
@@ -71,7 +72,6 @@ ResourceBuilding::ResourceBuilding(
 	texture_width = surface->w;
 	texture_height = surface->h;
 
-	// Convert surface to texture
 	texture = SDL_CreateTextureFromSurface(renderer, surface);
 	if (!texture)
 	{
@@ -81,21 +81,24 @@ ResourceBuilding::ResourceBuilding(
 
 	SDL_FreeSurface(surface);
 
-	/*
-	 * Convert the floating point position into a grid position.
-	 * 
-	 * To do this, look at the closest grid point to the building's leftist
-	 * point.
-	 */
+	// Calculate grid spacing
+	if (grid.side_length > 1)
+	{
+		grid_spacing_x = grid.data[0][1].x - grid.data[0][0].x; // Horizontal spacing
+		grid_spacing_y = grid.data[1][0].y - grid.data[0][0].y; // Vertical spacing
+	}
+	else
+	{
+		grid_spacing_x = 35 * _scale; // Fallback if grid is too small
+		grid_spacing_y = 25 * _scale;
+	}
 
-	// Get center grid tile
+	// Find closest grid point (unchanged)
 	int cx = 0, cy = 0;
 	for (int i = 0; i < grid.side_length; ++i)
 	{
 		for (int j = 0; j < grid.side_length; ++j)
 		{
-			//if (dist(grid.data[i][j].x * _scale, grid.data[i][j].y * _scale, pos.x, pos.y) <
-			//	dist(grid.data[cy][cx].x * _scale, grid.data[cy][cx].y * _scale, pos.x, pos.y))
 			if (dist(grid.data[i][j].x, grid.data[i][j].y, pos.x, pos.y) <
 				dist(grid.data[cy][cx].x, grid.data[cy][cx].y, pos.x, pos.y))
 			{
@@ -105,11 +108,13 @@ ResourceBuilding::ResourceBuilding(
 		}
 	}
 
+	// Initialize vertices (unchanged)
 	grid_snap_vertices = {
-		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * _scale,	  (grid.data[cy][cx].y - 62.5f	) * _scale },	 // top
-		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale,  (grid.data[cy][cx].y + 25		) * _scale },	 // right
-		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * _scale,	  (grid.data[cy][cx].y + 112.5f	) * _scale },	 // bottom
-		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale,  (grid.data[cy][cx].y + 25		) * _scale } };	 // left
+		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * _scale,   (grid.data[cy][cx].y - 62.5f) * _scale },
+		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale, (grid.data[cy][cx].y + 25) * _scale },
+		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * _scale,   (grid.data[cy][cx].y + 112.5f) * _scale },
+		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale, (grid.data[cy][cx].y + 25) * _scale }
+	};
 
 	offset_x = 0;
 	offset_y = 25;
@@ -253,57 +258,58 @@ void ResourceBuilding::mouse_drag(float dx, float dy, std::forward_list<Resource
 	if (record_start_vertices)
 	{
 		record_start_vertices = false;
-
 		start_grid_snap_vertices = grid_snap_vertices;
 		start_absolute_vertices = absolute_vertices;
 	}
 
-	for (int i = 0; i < grid_snap_vertices.size(); ++i)
+	// Update absolute vertices (continuous movement)
+	for (int i = 0; i < absolute_vertices.size(); ++i)
 	{
 		absolute_vertices[i].position.x += dx;
 		absolute_vertices[i].position.y += dy;
+	}
 
-		float ws = 35 * scale;
-		float hs = 25 * scale;
+	// Snap to nearest grid point
+	// Use the center of the building (e.g., average of vertices) to find the closest grid point
+	SDL_FPoint center = { 0, 0 };
+	for (const auto& vertex : absolute_vertices)
+	{
+		center.x += vertex.position.x;
+		center.y += vertex.position.y;
+	}
+	center.x /= absolute_vertices.size();
+	center.y /= absolute_vertices.size();
 
-		float d = absolute_vertices[i].position.x - grid_snap_vertices[i].position.x;
-		while (abs(d) >= ws)
+	// Find closest grid point
+	int cx = 0, cy = 0;
+	float min_dist = std::numeric_limits<float>::max();
+	for (int i = 0; i < grid.side_length; ++i)
+	{
+		for (int j = 0; j < grid.side_length; ++j)
 		{
-			if (d >= 0)
+			float d = dist(grid.data[i][j].x * scale, grid.data[i][j].y * scale, center.x, center.y);
+			if (d < min_dist)
 			{
-				grid_snap_vertices[i].position.x += ws;
-				d -= ws;
-			}
-			else
-			{
-				grid_snap_vertices[i].position.x -= ws;
-				d += ws;
-			}
-		}
-		d = absolute_vertices[i].position.y - grid_snap_vertices[i].position.y;
-		while (abs(d) >= hs)
-		{
-			if (d >= 0)
-			{
-				grid_snap_vertices[i].position.y += hs;
-				d -= hs;
-			}
-			else
-			{
-				grid_snap_vertices[i].position.y -= hs;
-				d += hs;
+				min_dist = d;
+				cx = j;
+				cy = i;
 			}
 		}
 	}
 
-	// Update colour
+	// Update grid_snap_vertices to the new grid point
+	grid_snap_vertices = {
+		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * scale,   (grid.data[cy][cx].y - 62.5f) * scale },
+		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * scale, (grid.data[cy][cx].y + 25) * scale },
+		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * scale,   (grid.data[cy][cx].y + 112.5f) * scale },
+		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * scale, (grid.data[cy][cx].y + 25) * scale }
+	};
 
+	// Update collision color
 	clr = SDL_Colour{ 0, 255, 0, 255 };
-
 	for (auto const& farmhouse : farmhouses)
 	{
-		if (&farmhouse != this &&
-			farmhouse.is_rhombus_in_rhombus(this->grid_snap_vertices))
+		if (&farmhouse != this && farmhouse.is_rhombus_in_rhombus(this->grid_snap_vertices))
 		{
 			clr = SDL_Colour{ 255, 0, 0, 255 };
 			break;

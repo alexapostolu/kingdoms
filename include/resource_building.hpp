@@ -32,7 +32,8 @@ public:
 		SDL_FPoint const& pos,
 		Grid const& grid,
 		float _scale,
-		FC_Font* font
+		FC_Font* font,
+		int tile_x, int tile_y
 	);
 
 	void init_resource_timer();
@@ -78,6 +79,10 @@ private:
 public:
 	ResourceBuildingType type;
 
+	int tiles_x, tiles_y;
+	int grid_spacing_x, grid_spacing_y;
+	Grid const& grid;
+
 	SDL_Renderer* renderer;
 
 	// Display
@@ -96,6 +101,8 @@ public:
 	bool record_start_vertices;
 	std::array<SDL_Vertex, 4> start_grid_snap_vertices;
 	std::array<SDL_Vertex, 4> start_absolute_vertices;
+
+	std::array<SDL_Vertex, 4> vertices;
 
 	bool display_resource;
 	float resource_amount;

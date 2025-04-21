@@ -17,7 +17,7 @@
 class Grid : private Object
 {
 public:
-	Grid(int _side_length);
+	Grid(int _side_length, int screen_width_mid, int screen_height_mid);
 	~Grid();
 
 public:
