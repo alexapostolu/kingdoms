@@ -33,12 +33,12 @@ private:
 	 * @returns pointer of the resource building that the mouse has clicked.
 	 * @returns nullptr if no resource building is clicked.
 	 */
-	ResourceBuilding* is_resource_building_clicked(int mouse_x, int mouse_y);
+	ResourceBuilding* is_resource_building_clicked(int mouse_x, int mouse_y, float scale);
 
 	/*
 	 * 
 	 */
-	ResourceBuilding* is_shop_building_clicked(int mouse_x, int mouse_y);
+	ResourceBuilding* is_shop_building_clicked(int mouse_x, int mouse_y, float scale);
 
 	/*
 	 * 

@@ -59,7 +59,7 @@ void Base::handle_scroll(int scroll)
 
 void Base::handle_mouse_click(int mouse_x, int mouse_y)
 {
-	auto building = is_resource_building_clicked(mouse_x, mouse_y);
+	auto building = is_resource_building_clicked(mouse_x, mouse_y, scale);
 	if (building)
 		building->mouse_press_update(scale, wheat, wood);
 
@@ -74,12 +74,12 @@ void Base::handle_mouse_click(int mouse_x, int mouse_y)
 
 void Base::handle_mouse_drag_start(int mouse_x, int mouse_y)
 {
-	if (display_shop && (drag_building = is_shop_building_clicked(mouse_x, mouse_y)))
+	if (display_shop && (drag_building = is_shop_building_clicked(mouse_x, mouse_y, scale)))
 	{
 		ResourceBuilding new_resource_building(
 			drag_building->type,
 			renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale,
-			font, drag_building->tiles_x, drag_building->tiles_y
+			font, drag_building->get_tiles_x(), drag_building->get_tiles_y()
 		);
 
 		resource_buildings.push_front(new_resource_building);
@@ -91,7 +91,7 @@ void Base::handle_mouse_drag_start(int mouse_x, int mouse_y)
 
 		drag = Drag::Building;
 	}
-	else if (drag_building = is_resource_building_clicked(mouse_x, mouse_y))
+	else if (drag_building = is_resource_building_clicked(mouse_x, mouse_y, scale))
 	{
 		drag = Drag::Building;
 	}
@@ -174,22 +174,22 @@ void Base::render()
 }
 
 
-ResourceBuilding* Base::is_resource_building_clicked(int mouse_x, int mouse_y)
+ResourceBuilding* Base::is_resource_building_clicked(int mouse_x, int mouse_y, float scale)
 {
 	for (auto& building : resource_buildings)
 	{
-		if (building.mouse_press(mouse_x, mouse_y))
+		if (building.mouse_press(mouse_x, mouse_y, scale))
 			return &building;
 	}
 
 	return nullptr;
 }
 
-ResourceBuilding* Base::is_shop_building_clicked(int mouse_x, int mouse_y)
+ResourceBuilding* Base::is_shop_building_clicked(int mouse_x, int mouse_y, float scale)
 {
 	for (auto& building : shop_buildings)
 	{
-		if (building.mouse_press(mouse_x, mouse_y))
+		if (building.mouse_press(mouse_x, mouse_y, scale))
 			return &building;
 	}
 

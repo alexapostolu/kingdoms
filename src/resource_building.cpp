@@ -34,16 +34,16 @@ ResourceBuilding::ResourceBuilding(
 	Grid const& grid,
 	float _scale,
 	FC_Font* _font,
-	int tile_x, int tile_y
+	int _tiles_x, int _tiles_y
 )
 	: type(_type)
+	, actual_pos_x(pos.x), actual_pos_y(pos.y)
+	, grid_pos_x(0), grid_pos_y(0)
 	, renderer(_renderer)
 	, grid(grid)
-	, texture(nullptr), texture_width(-1), texture_height(-1), clr({ 0, 0, 0, 0 })
+	, texture(nullptr), texture_width(-1), texture_height(-1), tiling_colour({ 255, 255, 255, 255 })
 	, offset_x(-1), offset_y(-1)
-	, grid_snap_vertices(), absolute_vertices()
-	, start_mouse_drag_x(-1), start_mouse_drag_y(-1)
-	, record_start_vertices(true), start_grid_snap_vertices(), start_absolute_vertices()
+	, record_start_vertices(true)
 	, display_resource(false)
 	, resource_amount(0), resource_per_sec(0), resource_capacity(500)
 	, show_information(false), info_rect()
@@ -52,7 +52,7 @@ ResourceBuilding::ResourceBuilding(
 	, resource_animation(_type, _renderer), animate_collection(false)
 	, info_tab_font(FC_CreateFont())
 	, tab(InfoTab::Info)
-	, grid_spacing_x(0), grid_spacing_y(0) // Add these members to the class
+	, tiles_x(_tiles_x), tiles_y(_tiles_y)
 {
 	int screen_width, screen_height;
 	SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
@@ -61,7 +61,6 @@ ResourceBuilding::ResourceBuilding(
 	std::string resource_image;
 	resource_building_type_to_image(_type, image, resource_image);
 
-	// Load texture (unchanged)
 	SDL_Surface* surface = IMG_Load(image.c_str());
 	if (!surface)
 	{
@@ -81,48 +80,13 @@ ResourceBuilding::ResourceBuilding(
 
 	SDL_FreeSurface(surface);
 
-	// Calculate grid spacing
-	if (grid.side_length > 1)
-	{
-		grid_spacing_x = grid.data[0][1].x - grid.data[0][0].x; // Horizontal spacing
-		grid_spacing_y = grid.data[1][0].y - grid.data[0][0].y; // Vertical spacing
-	}
-	else
-	{
-		grid_spacing_x = 35 * _scale; // Fallback if grid is too small
-		grid_spacing_y = 25 * _scale;
-	}
-
-	// Find closest grid point (unchanged)
-	int cx = 0, cy = 0;
-	for (int i = 0; i < grid.side_length; ++i)
-	{
-		for (int j = 0; j < grid.side_length; ++j)
-		{
-			if (dist(grid.data[i][j].x, grid.data[i][j].y, pos.x, pos.y) <
-				dist(grid.data[cy][cx].x, grid.data[cy][cx].y, pos.x, pos.y))
-			{
-				cx = j;
-				cy = i;
-			}
-		}
-	}
-
-	// Initialize vertices (unchanged)
-	grid_snap_vertices = {
-		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * _scale,   (grid.data[cy][cx].y - 62.5f) * _scale },
-		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * _scale, (grid.data[cy][cx].y + 25) * _scale },
-		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * _scale,   (grid.data[cy][cx].y + 112.5f) * _scale },
-		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * _scale, (grid.data[cy][cx].y + 25) * _scale }
-	};
-
 	offset_x = 0;
 	offset_y = 25;
 
-	absolute_vertices = grid_snap_vertices;
+	snap_actual_to_grid_pos(_scale);
 
-	info_rect.x = grid_snap_vertices[0].position.x;
-	info_rect.y = grid_snap_vertices[0].position.y - 100;
+	info_rect.x = grid_pos_x;
+	info_rect.y = grid_pos_y;
 	info_rect.w = 80;
 	info_rect.h = 80;
 
@@ -137,11 +101,11 @@ void ResourceBuilding::init_resource_timer()
 
 void ResourceBuilding::pan(float dx, float dy)
 {
-	for (auto& vertex : grid_snap_vertices)
-		pan_point(vertex.position, dx, dy);
+	actual_pos_x += dx;
+	actual_pos_y += dy;
 
-	for (auto& vertex : absolute_vertices)
-		pan_point(vertex.position, dx, dy);
+	grid_pos_x += dx;
+	grid_pos_y += dy;
 }
 
 bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, float py)
@@ -173,53 +137,65 @@ bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, fl
 	return collision;
 }
 
-bool ResourceBuilding::mouse_press(float mx, float my)
+bool ResourceBuilding::is_clicked(float mx, float my, float scale)
 {
-	bool is_clicked = is_point_in_rhombus(grid_snap_vertices, mx, my);
+	float width = 35 * scale * tiles_x;
+	float height = 25 * scale * tiles_y;
 
-	if (!is_clicked)
+	float dx = std::abs(mx - grid_pos_x);
+	float dy = std::abs(my - grid_pos_y);
+
+	float dist_norm = (dx / (width / 2.0)) + (dy / (height / 2.0));
+
+	return dist_norm <= 1.0;
+}
+
+bool ResourceBuilding::mouse_press(float mx, float my, float scale)
+{
+	if (!is_clicked(mx, my, scale))
+		return false;
+
+	show_information = false;
+
+	if (animate == Animate::Opened)
 	{
-		show_information = false;
+		int screen_width, screen_height;
+		SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
 
-		if (animate == Animate::Opened)
+		// Close information card if mouse clicked away from the card.
+		if (mx < screen_width - information_width)
 		{
-			int screen_width, screen_height;
-			SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
+			animate = Animate::Closing;
+		}
+		else
+		{
+			for (int i = 0; i < (int)InfoTab::COUNT; ++i)
+			{
+				SDL_Rect icon_rect{
+					(screen_width - information_width) + (i * 50) + 15, screen_height / 6,
+					50, 50
+				};
 
-			// Close information card if mouse clicked away from the card.
-			if (mx < screen_width - information_width)
-			{
-				animate = Animate::Closing;
-			}
-			else
-			{
-				for (int i = 0; i < (int)InfoTab::COUNT; ++i)
+				// Mouse is in the icon.
+				if (mx > icon_rect.x && mx < icon_rect.x + icon_rect.w &&
+					my > icon_rect.y && my < icon_rect.y + icon_rect.h)
 				{
-					SDL_Rect icon_rect{
-						(screen_width - information_width) + (i * 50) + 15, screen_height / 6,
-						50, 50
-					};
-
-					// Mouse is in the icon.
-					if (mx > icon_rect.x && mx < icon_rect.x + icon_rect.w &&
-						my > icon_rect.y && my < icon_rect.y + icon_rect.h)
-					{
-						tab = (InfoTab)i;
-						break;
-					}
+					tab = (InfoTab)i;
+					break;
 				}
 			}
 		}
 	}
 
-	return is_clicked;
+	return true;
 }
 
 void ResourceBuilding::mouse_press_update(float scale, unsigned int& wheat, unsigned int& wood)
 {
 	if (display_resource)
 	{
-		resource_animation.init_animation(renderer, grid_snap_vertices[0].position.x, grid_snap_vertices[1].position.y, scale, resource_amount);
+		//resource_animation.init_animation(renderer, grid_snap_vertices[0].position.x, grid_snap_vertices[1].position.y, scale, resource_amount);
+		resource_animation.init_animation(renderer, grid_pos_x, grid_pos_y, scale, resource_amount);
 
 		animate_collection = true;
 		display_resource = false;
@@ -240,78 +216,67 @@ void ResourceBuilding::mouse_press_update(float scale, unsigned int& wheat, unsi
 	}
 }
 
-bool ResourceBuilding::is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const
+bool isPointInRhombus(double cx, double cy, double w, double h, double mx, double my) {
+	double dx = std::abs(mx - cx);
+	double dy = std::abs(my - cy);
+	return (dx / (w / 2.0)) + (dy / (h / 2.0)) <= 1.0;
+}
+
+bool ResourceBuilding::is_rhombus_in_rhombus(float cx1, float cy1,
+	float cx2, float cy2, float scale) const
 {
-	// Check for vertex containment
-	for (int i = 0; i < 4; ++i)
-	{
-		if (is_point_in_rhombus(grid_snap_vertices, _vertices[i].position.x, _vertices[i].position.y) ||
-			is_point_in_rhombus(_vertices, grid_snap_vertices[i].position.x, grid_snap_vertices[i].position.y))
-			return true;
+	float w1 = 35 * scale;
+	float h1 = 25 * scale;
+	float w2 = w1;
+	float h2 = h1;
+	// Quick bounding box test
+	if (std::abs(cx1 - cx2) > (w1 + w2) / 2.0 || std::abs(cy1 - cy2) > (h1 + h2) / 2.0) {
+		return false; // Bounding boxes don't overlap
 	}
+
+	// Vertices of Rhombus 1
+	double v1x[] = { cx1 + w1 / 2.0, cx1 - w1 / 2.0, cx1, cx1 };
+	double v1y[] = { cy1, cy1, cy1 + h1 / 2.0, cy1 - h1 / 2.0 };
+
+	// Vertices of Rhombus 2
+	double v2x[] = { cx2 + w2 / 2.0, cx2 - w2 / 2.0, cx2, cx2 };
+	double v2y[] = { cy2, cy2, cy2 + h2 / 2.0, cy2 - h2 / 2.0 };
+
+	// Check if any vertex of Rhombus 1 is inside Rhombus 2
+	for (int i = 0; i < 4; ++i) {
+		if (isPointInRhombus(cx2, cy2, w2, h2, v1x[i], v1y[i])) {
+			return true;
+		}
+	}
+
+	// Check if any vertex of Rhombus 2 is inside Rhombus 1
+	for (int i = 0; i < 4; ++i) {
+		if (isPointInRhombus(cx1, cy1, w1, h1, v2x[i], v2y[i])) {
+			return true;
+		}
+	}
+
+	// If no vertex is inside the other rhombus, they may still overlap if edges intersect.
+	// For axis-aligned rhombuses, the vertex check is often sufficient due to convexity.
+	// If needed, you could add edge intersection tests, but this is usually redundant.
 
 	return false;
 }
 
 void ResourceBuilding::mouse_drag(float dx, float dy, std::forward_list<ResourceBuilding> const& farmhouses, float scale)
 {
-	if (record_start_vertices)
-	{
-		record_start_vertices = false;
-		start_grid_snap_vertices = grid_snap_vertices;
-		start_absolute_vertices = absolute_vertices;
-	}
+	actual_pos_x += dx;
+	actual_pos_y += dy;
 
-	// Update absolute vertices (continuous movement)
-	for (int i = 0; i < absolute_vertices.size(); ++i)
-	{
-		absolute_vertices[i].position.x += dx;
-		absolute_vertices[i].position.y += dy;
-	}
-
-	// Snap to nearest grid point
-	// Use the center of the building (e.g., average of vertices) to find the closest grid point
-	SDL_FPoint center = { 0, 0 };
-	for (const auto& vertex : absolute_vertices)
-	{
-		center.x += vertex.position.x;
-		center.y += vertex.position.y;
-	}
-	center.x /= absolute_vertices.size();
-	center.y /= absolute_vertices.size();
-
-	// Find closest grid point
-	int cx = 0, cy = 0;
-	float min_dist = std::numeric_limits<float>::max();
-	for (int i = 0; i < grid.side_length; ++i)
-	{
-		for (int j = 0; j < grid.side_length; ++j)
-		{
-			float d = dist(grid.data[i][j].x * scale, grid.data[i][j].y * scale, center.x, center.y);
-			if (d < min_dist)
-			{
-				min_dist = d;
-				cx = j;
-				cy = i;
-			}
-		}
-	}
-
-	// Update grid_snap_vertices to the new grid point
-	grid_snap_vertices = {
-		SDL_Vertex{ (grid.data[cy][cx].x + 0.0f) * scale,   (grid.data[cy][cx].y - 62.5f) * scale },
-		SDL_Vertex{ (grid.data[cy][cx].x + 123.5f) * scale, (grid.data[cy][cx].y + 25) * scale },
-		SDL_Vertex{ (grid.data[cy][cx].x - 0.0f) * scale,   (grid.data[cy][cx].y + 112.5f) * scale },
-		SDL_Vertex{ (grid.data[cy][cx].x - 123.5f) * scale, (grid.data[cy][cx].y + 25) * scale }
-	};
+	snap_actual_to_grid_pos(scale); // Updates grid_pos_x and grid_pos_y
 
 	// Update collision color
-	clr = SDL_Colour{ 0, 255, 0, 255 };
+	tiling_colour = SDL_Color{ 0, 255, 0, 255 };
 	for (auto const& farmhouse : farmhouses)
 	{
-		if (&farmhouse != this && farmhouse.is_rhombus_in_rhombus(this->grid_snap_vertices))
+		if (&farmhouse != this && is_rhombus_in_rhombus(grid_pos_x, grid_pos_y, farmhouse.grid_pos_x, farmhouse.grid_pos_y, scale))
 		{
-			clr = SDL_Colour{ 255, 0, 0, 255 };
+			tiling_colour = SDL_Colour{ 255, 0, 0, 255 }; // Red if overlapping
 			break;
 		}
 	}
@@ -323,16 +288,23 @@ bool ResourceBuilding::mouse_release()
 {
 	bool is_blocked = false;
 
-	if (clr.r == 255)
+	if (tiling_colour.r == 255)
 	{
-		grid_snap_vertices = start_grid_snap_vertices;
-		absolute_vertices = start_absolute_vertices;
-		
+		// If blocked, keep actual_pos at the last valid grid_pos
+		// Note: grid_pos_x and grid_pos_y are already set by snap_actual_to_grid_pos
+		actual_pos_x = grid_pos_x;
+		actual_pos_y = grid_pos_y;
 		is_blocked = true;
 	}
-
+	else
+	{
+		// Update actual_pos to match grid_pos for consistency
+		actual_pos_x = grid_pos_x;
+		actual_pos_y = grid_pos_y;
+	}
+	
 	record_start_vertices = true;
-	clr = SDL_Colour{ 0, 0, 0, 0 };
+	tiling_colour = SDL_Colour{ 255, 255, 255, 255 };
 
 	show_information = !show_information;
 
@@ -341,36 +313,44 @@ bool ResourceBuilding::mouse_release()
 
 void ResourceBuilding::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
 {
-	for (auto& vertex : grid_snap_vertices)
-	{
-		vertex.position.x = (vertex.position.x - mouse_x) * scale_ratio + mouse_x;
-		vertex.position.y = (vertex.position.y - mouse_y) * scale_ratio + mouse_y;
-	}
+	grid_pos_x = (grid_pos_x - mouse_x) * scale_ratio + mouse_x;
+	grid_pos_y = (grid_pos_y - mouse_y) * scale_ratio + mouse_y;
 
-	for (auto& vertex : absolute_vertices)
-	{
-		vertex.position.x = (vertex.position.x - mouse_x) * scale_ratio + mouse_x;
-		vertex.position.y = (vertex.position.y - mouse_y) * scale_ratio + mouse_y;
-	}
+	actual_pos_x = (actual_pos_x - mouse_x) * scale_ratio + mouse_x;
+	actual_pos_y = (actual_pos_y - mouse_y) * scale_ratio + mouse_y;
 }
 
 void ResourceBuilding::render(SDL_Renderer* renderer, float scale)
 {
-	for (auto& vertex : grid_snap_vertices)
-		vertex.color = clr;
+	int width_half = (tiles_x * 35 * scale) / 2;
+	int height_half = (tiles_y * 25 * scale) / 2;
 
 	// Render green grid base
 	int indices[] = {
 		0, 1, 2, // Top, Right, Bottom
 		0, 3, 2  // Top, Bottom, Left
 	};
-	SDL_RenderGeometry(renderer, NULL, grid_snap_vertices.data(), grid_snap_vertices.size(), indices, 6);
+
+	// Define vertices with position, color, and texture coordinates
+	SDL_Vertex pos[] = {
+		// Top vertex: (grid_pos_x, grid_pos_y - height_half)
+		{{(float)grid_pos_x, (float)(grid_pos_y - height_half)}, tiling_colour, {0, 0}},
+		// Right vertex: (grid_pos_x + width_half, grid_pos_y)
+		{{(float)(grid_pos_x + width_half), (float)grid_pos_y}, tiling_colour, {0, 0}},
+		// Bottom vertex: (grid_pos_x, grid_pos_y + height_half)
+		{{(float)grid_pos_x, (float)(grid_pos_y + height_half)}, tiling_colour, {0, 0}},
+		// Left vertex: (grid_pos_x - width_half, grid_pos_y)
+		{{(float)(grid_pos_x - width_half), (float)grid_pos_y}, tiling_colour, {0, 0}}
+	};
+
+	// Render the geometry
+	SDL_RenderGeometry(renderer, NULL, pos, sizeof(pos) / sizeof(pos[0]), indices, sizeof(indices) / sizeof(indices[0]));
 
 	// Render farmhouse
-	float x = grid_snap_vertices[0].position.x;
-	float y = grid_snap_vertices[1].position.y;
-	float w = 200 * scale;
-	float h = texture_height / (texture_width / 200) * scale;
+	float x = grid_pos_x;
+	float y = grid_pos_y;
+	float w = 100 * scale;
+	float h = texture_height / (texture_width / 100) * scale;
 
 	SDL_FRect rect{
 		x - (w / 2.0f), y - (h / 2.0f) - (offset_y * scale),
@@ -478,4 +458,29 @@ Uint32 ResourceBuilding::resource_callback(Uint32 interval, void* obj)
 	farmhouse->display_resource = farmhouse->resource_amount >= 50;
 
 	return interval;
+}
+
+int ResourceBuilding::get_tiles_x() const { return tiles_x; }
+
+int ResourceBuilding::get_tiles_y() const { return tiles_y; }
+
+void ResourceBuilding::snap_actual_to_grid_pos(float scale)
+{
+	float left = actual_pos_x - (35 * scale) * (tiles_x / 2.0f) + (17.5f * scale);
+	float min_dist = std::numeric_limits<float>::max();
+
+	for (int i = 0; i < grid.side_length; ++i)
+	{
+		for (int j = 0; j < grid.side_length; ++j)
+		{
+			float d = dist(grid.data[i][j].x, grid.data[i][j].y, left, actual_pos_y);
+
+			if (d < min_dist)
+			{
+				min_dist = d;
+				grid_pos_x = grid.data[i][j].x + (35 * scale) * (tiles_x / 2.0f) - (17.5f * scale);
+				grid_pos_y = grid.data[i][j].y;
+			}
+		}
+	}
 }

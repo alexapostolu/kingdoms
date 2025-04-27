@@ -33,7 +33,7 @@ public:
 		Grid const& grid,
 		float _scale,
 		FC_Font* font,
-		int tile_x, int tile_y
+		int tiles_x, int tiles_y
 	);
 
 	void init_resource_timer();
@@ -45,7 +45,7 @@ public:
 	 * If mouse is pressed over object, returns True. Otherwise, handles mouse
 	 * not pressed over object and returns False.
 	 */
-	bool mouse_press(float mx, float my);
+	bool mouse_press(float mx, float my, float scale);
 
 	/*
 	 * Handles updates for when mouse is pressed over object and returns
@@ -55,6 +55,9 @@ public:
 
 	/*
 	 * @param farmhouses For collision detection
+	 * 
+	 * Only call this function if the object is being dragged. This function does not check if
+	 * the mouse is dragging it, it just assumes it.
 	 */
 	void mouse_drag(float mx, float my, std::forward_list<ResourceBuilding> const& farmhouses, float scale);
 	
@@ -73,14 +76,22 @@ public:
 
 	static Uint32 resource_callback(Uint32 interval, void* obj);
 
+public:
+	int get_tiles_x() const;
+
+	int get_tiles_y() const;
+
 private:
-	bool is_rhombus_in_rhombus(std::array<SDL_Vertex, 4> const& _vertices) const;
+	bool is_rhombus_in_rhombus(float cx1, float cy1,
+		float cx2, float cy2, float scale) const;
+
+	void snap_actual_to_grid_pos(float scale);
+
+	bool is_clicked(float mx, float my, float scale);
 
 public:
 	ResourceBuildingType type;
 
-	int tiles_x, tiles_y;
-	int grid_spacing_x, grid_spacing_y;
 	Grid const& grid;
 
 	SDL_Renderer* renderer;
@@ -88,21 +99,15 @@ public:
 	// Display
 	SDL_Texture* texture;
 	int texture_width, texture_height;
-	SDL_Colour clr;
 
 	// Position
-	float offset_x, offset_y;
-	std::array<SDL_Vertex, 4> grid_snap_vertices;
-	std::array<SDL_Vertex, 4> absolute_vertices;
+	float actual_pos_x, actual_pos_y;
+	float grid_pos_x, grid_pos_y;
 
-	// Movement
-	float start_mouse_drag_x, start_mouse_drag_y;
+	float offset_x, offset_y;
+
 	// If the movement ends at an invalid location, reset the position to original
 	bool record_start_vertices;
-	std::array<SDL_Vertex, 4> start_grid_snap_vertices;
-	std::array<SDL_Vertex, 4> start_absolute_vertices;
-
-	std::array<SDL_Vertex, 4> vertices;
 
 	bool display_resource;
 	float resource_amount;
@@ -113,6 +118,10 @@ public:
 	SDL_FRect info_rect;
 
 private:
+	SDL_Color tiling_colour;
+
+	int tiles_x, tiles_y;
+
 	/*
 	 * Resource icon and collection animation.
 	 */
