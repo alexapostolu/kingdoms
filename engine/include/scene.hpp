@@ -44,6 +44,11 @@ public:
 	 */
 	virtual void render() = 0;
 
+	/*
+	 *
+	 */
+	float get_scale() const;
+
 public:
 	static Scene* current_scene;
 	static Scene* scenes[5];

@@ -18,6 +18,12 @@ enum class ResourceBuildingType
 	LUMBERMILL
 };
 
+/*
+ * Out of bounds check when building the dragged is done by snapping the actual
+ * location of the building (based off of the mouse position) to the nearest
+ * grid tile. So the actual position of the building could be way out of bounds,
+ * but it is always snapped to the nearest grid position.
+ */
 class ResourceBuilding : private Object
 {
 public:
@@ -59,9 +65,9 @@ public:
 	 * Only call this function if the object is being dragged. This function does not check if
 	 * the mouse is dragging it, it just assumes it.
 	 */
-	void mouse_drag(float mx, float my, std::forward_list<ResourceBuilding> const& farmhouses, float scale);
+	void mouse_drag(float mx, float my, float scale);
 	
-	bool mouse_release();
+	bool mouse_release(float scale);
 
 	/*
 	 * Zoom based on mouse position and scale
@@ -78,14 +84,18 @@ public:
 
 public:
 	int get_tiles_x() const;
-
 	int get_tiles_y() const;
 
-private:
-	bool is_rhombus_in_rhombus(float cx1, float cy1,
-		float cx2, float cy2, float scale) const;
+	float get_width(float scale) const;
+	float get_height(float scale) const;
 
-	void snap_actual_to_grid_pos(float scale);
+	float get_pos_x() const;
+	float get_pos_y() const;
+
+	void set_tiling_colour(SDL_Color const& colour);
+
+private:
+	void update_grid_pos(float scale);
 
 	bool is_clicked(float mx, float my, float scale);
 
@@ -106,9 +116,6 @@ public:
 
 	float offset_x, offset_y;
 
-	// If the movement ends at an invalid location, reset the position to original
-	bool record_start_vertices;
-
 	bool display_resource;
 	float resource_amount;
 	float resource_per_sec;
@@ -119,6 +126,8 @@ public:
 
 private:
 	SDL_Color tiling_colour;
+
+	float starting_grid_pos_x, starting_grid_pos_y;
 
 	int tiles_x, tiles_y;
 

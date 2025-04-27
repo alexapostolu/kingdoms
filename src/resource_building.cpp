@@ -1,4 +1,6 @@
 #include "resource_building.hpp"
+#include "colours.hpp"
+#include "math.hpp"
 
 #include <math.h>
 #include <stdlib.h>
@@ -31,7 +33,7 @@ ResourceBuilding::ResourceBuilding(
 	ResourceBuildingType _type,
 	SDL_Renderer* _renderer,
 	SDL_FPoint const& pos,
-	Grid const& grid,
+	Grid const& _grid,
 	float _scale,
 	FC_Font* _font,
 	int _tiles_x, int _tiles_y
@@ -40,10 +42,9 @@ ResourceBuilding::ResourceBuilding(
 	, actual_pos_x(pos.x), actual_pos_y(pos.y)
 	, grid_pos_x(0), grid_pos_y(0)
 	, renderer(_renderer)
-	, grid(grid)
-	, texture(nullptr), texture_width(-1), texture_height(-1), tiling_colour({ 255, 255, 255, 255 })
+	, grid(_grid)
+	, texture(nullptr), texture_width(-1), texture_height(-1), tiling_colour({ 255, 255, 255, 122 })
 	, offset_x(-1), offset_y(-1)
-	, record_start_vertices(true)
 	, display_resource(false)
 	, resource_amount(0), resource_per_sec(0), resource_capacity(500)
 	, show_information(false), info_rect()
@@ -83,7 +84,7 @@ ResourceBuilding::ResourceBuilding(
 	offset_x = 0;
 	offset_y = 25;
 
-	snap_actual_to_grid_pos(_scale);
+	update_grid_pos(_scale);
 
 	info_rect.x = grid_pos_x;
 	info_rect.y = grid_pos_y;
@@ -92,6 +93,15 @@ ResourceBuilding::ResourceBuilding(
 
 	int font_size = screen_height / 50;
 	FC_LoadFont(info_tab_font, renderer, "../../assets/Cinzel.ttf", font_size, FC_MakeColor(255, 255, 255, 255), TTF_STYLE_NORMAL);
+
+	for (int i = 0; i < grid.side_length; ++i)
+	{
+		for (int j = 0; j < grid.side_length; ++j)
+		{
+			if (is_point_in_rhombus(grid_pos_x, grid_pos_y, get_width(_scale), get_height(_scale), grid.data[i][j].x, grid.data[i][j].y))
+				grid.data[i][j].occupied = true;
+		}
+	}
 }
 
 void ResourceBuilding::init_resource_timer()
@@ -106,35 +116,6 @@ void ResourceBuilding::pan(float dx, float dy)
 
 	grid_pos_x += dx;
 	grid_pos_y += dy;
-}
-
-bool is_point_in_rhombus(std::array<SDL_Vertex, 4> const& vertices, float px, float py)
-{
-	bool collision = false;
-
-	// go through each of the vertices, plus
-	// the next vertex in the list
-	int next = 0;
-	for (int current = 0; current < vertices.size(); current++) {
-
-		// get next vertex in list
-		// if we've hit the end, wrap around to 0
-		next = current + 1;
-		if (next == vertices.size()) next = 0;
-
-		// get the PVectors at our current position
-		// this makes our if statement a little cleaner
-		SDL_Vertex vc = vertices[current];    // c for "current"
-		SDL_Vertex vn = vertices[next];       // n for "next"
-
-		// compare position, flip 'collision' variable
-		// back and forth
-		if (((vc.position.y >= py && vn.position.y < py) || (vc.position.y < py && vn.position.y >= py)) &&
-			(px < (vn.position.x - vc.position.x) * (py - vc.position.y) / (vn.position.y - vc.position.y) + vc.position.x)) {
-			collision = !collision;
-		}
-	}
-	return collision;
 }
 
 bool ResourceBuilding::is_clicked(float mx, float my, float scale)
@@ -154,6 +135,9 @@ bool ResourceBuilding::mouse_press(float mx, float my, float scale)
 {
 	if (!is_clicked(mx, my, scale))
 		return false;
+
+	starting_grid_pos_x = grid_pos_x;
+	starting_grid_pos_y = grid_pos_y;
 
 	show_information = false;
 
@@ -216,99 +200,113 @@ void ResourceBuilding::mouse_press_update(float scale, unsigned int& wheat, unsi
 	}
 }
 
-bool isPointInRhombus(double cx, double cy, double w, double h, double mx, double my) {
-	double dx = std::abs(mx - cx);
-	double dy = std::abs(my - cy);
-	return (dx / (w / 2.0)) + (dy / (h / 2.0)) <= 1.0;
-}
-
-bool ResourceBuilding::is_rhombus_in_rhombus(float cx1, float cy1,
-	float cx2, float cy2, float scale) const
-{
-	float w1 = 35 * scale;
-	float h1 = 25 * scale;
-	float w2 = w1;
-	float h2 = h1;
-	// Quick bounding box test
-	if (std::abs(cx1 - cx2) > (w1 + w2) / 2.0 || std::abs(cy1 - cy2) > (h1 + h2) / 2.0) {
-		return false; // Bounding boxes don't overlap
-	}
-
-	// Vertices of Rhombus 1
-	double v1x[] = { cx1 + w1 / 2.0, cx1 - w1 / 2.0, cx1, cx1 };
-	double v1y[] = { cy1, cy1, cy1 + h1 / 2.0, cy1 - h1 / 2.0 };
-
-	// Vertices of Rhombus 2
-	double v2x[] = { cx2 + w2 / 2.0, cx2 - w2 / 2.0, cx2, cx2 };
-	double v2y[] = { cy2, cy2, cy2 + h2 / 2.0, cy2 - h2 / 2.0 };
-
-	// Check if any vertex of Rhombus 1 is inside Rhombus 2
-	for (int i = 0; i < 4; ++i) {
-		if (isPointInRhombus(cx2, cy2, w2, h2, v1x[i], v1y[i])) {
-			return true;
-		}
-	}
-
-	// Check if any vertex of Rhombus 2 is inside Rhombus 1
-	for (int i = 0; i < 4; ++i) {
-		if (isPointInRhombus(cx1, cy1, w1, h1, v2x[i], v2y[i])) {
-			return true;
-		}
-	}
-
-	// If no vertex is inside the other rhombus, they may still overlap if edges intersect.
-	// For axis-aligned rhombuses, the vertex check is often sufficient due to convexity.
-	// If needed, you could add edge intersection tests, but this is usually redundant.
-
-	return false;
-}
-
-void ResourceBuilding::mouse_drag(float dx, float dy, std::forward_list<ResourceBuilding> const& farmhouses, float scale)
+void ResourceBuilding::mouse_drag(float dx, float dy, float scale)
 {
 	actual_pos_x += dx;
 	actual_pos_y += dy;
 
-	snap_actual_to_grid_pos(scale); // Updates grid_pos_x and grid_pos_y
+	update_grid_pos(scale);
 
-	// Update collision color
-	tiling_colour = SDL_Color{ 0, 255, 0, 255 };
-	for (auto const& farmhouse : farmhouses)
+	// Temporarily clear the building's previous position's occupied flags to avoid self-collision
+	for (int i = 0; i < grid.side_length; ++i)
 	{
-		if (&farmhouse != this && is_rhombus_in_rhombus(grid_pos_x, grid_pos_y, farmhouse.grid_pos_x, farmhouse.grid_pos_y, scale))
+		for (int j = 0; j < grid.side_length; ++j)
 		{
-			tiling_colour = SDL_Colour{ 255, 0, 0, 255 }; // Red if overlapping
-			break;
+			if (is_point_in_rhombus(starting_grid_pos_x, starting_grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y))
+				grid.data[i][j].occupied = false;
 		}
 	}
+
+	// Check for occupied tiles at the new position
+	bool collision = false;
+	for (int i = 0; i < grid.side_length; ++i)
+	{
+		for (int j = 0; j < grid.side_length; ++j)
+		{
+			if (is_point_in_rhombus(grid_pos_x, grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y) &&
+				grid.data[i][j].occupied)
+			{
+				collision = true;
+				break;
+			}
+		}
+		if (collision) break;
+	}
+
+	// Restore the previous position's occupied flags
+	for (int i = 0; i < grid.side_length; ++i)
+	{
+		for (int j = 0; j < grid.side_length; ++j)
+		{
+			if (is_point_in_rhombus(starting_grid_pos_x, starting_grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y))
+				grid.data[i][j].occupied = true;
+		}
+	}
+
+	// Set tiling colour based on collision
+	tiling_colour = collision ? colour::building_tiling_red : colour::building_tiling_green;
 
 	show_information = false;
 }
 
-bool ResourceBuilding::mouse_release()
+bool ResourceBuilding::mouse_release(float scale)
 {
-	bool is_blocked = false;
-
-	if (tiling_colour.r == 255)
+	// Check for occupied tiles at the new position
+	bool collision = false;
+	for (int i = 0; i < grid.side_length; ++i)
 	{
-		// If blocked, keep actual_pos at the last valid grid_pos
-		// Note: grid_pos_x and grid_pos_y are already set by snap_actual_to_grid_pos
-		actual_pos_x = grid_pos_x;
-		actual_pos_y = grid_pos_y;
-		is_blocked = true;
+		for (int j = 0; j < grid.side_length; ++j)
+		{
+			if (is_point_in_rhombus(grid_pos_x, grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y) &&
+				grid.data[i][j].occupied)
+			{
+				collision = true;
+				break;
+			}
+		}
+		if (collision) break;
+	}
+
+	if (collision || tiling_colour.r == 255)
+	{
+		// Revert to starting position if collision detected
+		grid_pos_x = starting_grid_pos_x;
+		grid_pos_y = starting_grid_pos_y;
+		actual_pos_x = starting_grid_pos_x;
+		actual_pos_y = starting_grid_pos_y;
+		tiling_colour = SDL_Colour{ 255, 255, 255, 122 };
+		return true;
 	}
 	else
 	{
-		// Update actual_pos to match grid_pos for consistency
+		// Move is valid: update actual_pos and grid occupancy
 		actual_pos_x = grid_pos_x;
 		actual_pos_y = grid_pos_y;
+
+		// Clear previous position's occupied flags
+		for (int i = 0; i < grid.side_length; ++i)
+		{
+			for (int j = 0; j < grid.side_length; ++j)
+			{
+				if (is_point_in_rhombus(starting_grid_pos_x, starting_grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y))
+					grid.data[i][j].occupied = false;
+			}
+		}
+
+		// Mark new position's tiles as occupied
+		for (int i = 0; i < grid.side_length; ++i)
+		{
+			for (int j = 0; j < grid.side_length; ++j)
+			{
+				if (is_point_in_rhombus(grid_pos_x, grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y))
+					grid.data[i][j].occupied = true;
+			}
+		}
+
+		tiling_colour = SDL_Colour{ 255, 255, 255, 122 };
+		show_information = !show_information;
+		return false;
 	}
-	
-	record_start_vertices = true;
-	tiling_colour = SDL_Colour{ 255, 255, 255, 255 };
-
-	show_information = !show_information;
-
-	return is_blocked;
 }
 
 void ResourceBuilding::mouse_wheel(int mouse_x, int mouse_y, float scale_ratio)
@@ -464,14 +462,28 @@ int ResourceBuilding::get_tiles_x() const { return tiles_x; }
 
 int ResourceBuilding::get_tiles_y() const { return tiles_y; }
 
-void ResourceBuilding::snap_actual_to_grid_pos(float scale)
+float ResourceBuilding::get_width(float scale) const { return tiles_x * (35 * scale); }
+
+float ResourceBuilding::get_height(float scale) const { return tiles_y * (25 * scale); }
+
+float ResourceBuilding::get_pos_x() const
+{
+	return grid_pos_x;
+}
+
+float ResourceBuilding::get_pos_y() const
+{
+	return grid_pos_y;
+}
+
+void ResourceBuilding::update_grid_pos(float scale)
 {
 	float left = actual_pos_x - (35 * scale) * (tiles_x / 2.0f) + (17.5f * scale);
 	float min_dist = std::numeric_limits<float>::max();
 
-	for (int i = 0; i < grid.side_length; ++i)
+	for (int i = tiles_y - 1; i < grid.side_length; ++i)
 	{
-		for (int j = 0; j < grid.side_length; ++j)
+		for (int j = 0; j < grid.side_length - tiles_x + 1; ++j)
 		{
 			float d = dist(grid.data[i][j].x, grid.data[i][j].y, left, actual_pos_y);
 
@@ -483,4 +495,9 @@ void ResourceBuilding::snap_actual_to_grid_pos(float scale)
 			}
 		}
 	}
+}
+
+void ResourceBuilding::set_tiling_colour(SDL_Color const& colour)
+{
+	tiling_colour = colour;
 }

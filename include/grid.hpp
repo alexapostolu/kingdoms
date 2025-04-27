@@ -4,6 +4,12 @@
 
 #include "SDL.h"
 
+struct Tile
+{
+	float x, y;
+	bool occupied;
+};
+
 /*
  * A grid is a 2D matrix of rhombuses. Each rhombus is represented as a floating
  * point of its center.
@@ -27,5 +33,5 @@ public:
 
 public:
 	int side_length;
-	SDL_FPoint** data;
+	Tile** data;
 };

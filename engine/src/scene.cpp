@@ -11,3 +11,8 @@ Scene::Scene(SDL_Window* _window, SDL_Renderer* _renderer)
 {
 
 }
+
+float Scene::get_scale() const
+{
+	return scale;
+}

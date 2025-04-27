@@ -12,10 +12,10 @@ Grid::Grid(int _side_length, int screen_width_mid, int screen_height_mid)
 	float starting_x = screen_width_mid;
 	float starting_y = screen_height_mid - (side_length * (rhombus_h / 2));
 
-	data = new SDL_FPoint*[side_length];
+	data = new Tile*[side_length];
 	for (int i = 0; i < side_length; ++i)
 	{
-		data[i] = new SDL_FPoint[side_length];
+		data[i] = new Tile[side_length];
 		for (int j = 0; j < side_length; ++j)
 		{
 			float x = starting_x + ((rhombus_w / 2) * j);
@@ -54,7 +54,10 @@ void Grid::mouse_drag(float dx, float dy)
 	for (int i = 0; i < side_length; ++i)
 	{
 		for (int j = 0; j < side_length; ++j)
-			pan_point(data[i][j], dx, dy);
+		{
+			data[i][j].x += dx;
+			data[i][j].y += dy;
+		}
 	}
 }
 

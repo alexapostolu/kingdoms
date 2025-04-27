@@ -1,4 +1,6 @@
 #include "base.hpp"
+#include "colours.hpp"
+#include "math.hpp"
 
 #include <iostream>
 
@@ -115,7 +117,21 @@ void Base::handle_mouse_drag_duration(int mouse_x, int mouse_y)
 
 	if (drag == Drag::Building)
 	{
-		drag_building->mouse_drag(delta_x, delta_y, resource_buildings, scale);
+		drag_building->mouse_drag(delta_x, delta_y, scale);
+
+		// Update collision color
+		//drag_building->set_tiling_colour(colour::building_tiling_green);
+
+		for (auto const& building : resource_buildings)
+		{
+			if (&building != drag_building &&
+				is_rhombus_in_rhombus(building.get_pos_x(), building.get_pos_y(), building.get_width(scale), building.get_height(scale),
+					drag_building->get_pos_x(), drag_building->get_pos_y(), drag_building->get_width(scale), drag_building->get_height(scale)))
+			{
+				drag_building->set_tiling_colour(colour::building_tiling_red);
+				break;
+			}
+		}
 	}
 	else if (drag == Drag::Grid)
 	{
@@ -145,7 +161,7 @@ void Base::handle_mouse_drag_end(int mouse_x, int mouse_y)
 {
 	if (drag_building)
 	{
-		bool is_blocked = drag_building->mouse_release();
+		bool is_blocked = drag_building->mouse_release(scale);
 		if (is_blocked && new_building)
 			resource_buildings.pop_front();
 
