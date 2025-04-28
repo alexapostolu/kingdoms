@@ -79,7 +79,7 @@ void Base::handle_mouse_drag_start(int mouse_x, int mouse_y)
 	if (display_shop && (drag_building = is_shop_building_clicked(mouse_x, mouse_y, scale)))
 	{
 		ResourceBuilding new_resource_building(
-			drag_building->type,
+			drag_building->get_type(),
 			renderer, SDL_FPoint{ (float)mouse_x, (float)mouse_y }, grid, scale,
 			font, drag_building->get_tiles_x(), drag_building->get_tiles_y()
 		);
@@ -119,8 +119,7 @@ void Base::handle_mouse_drag_duration(int mouse_x, int mouse_y)
 	{
 		drag_building->mouse_drag(delta_x, delta_y, scale);
 
-		// Update collision color
-		//drag_building->set_tiling_colour(colour::building_tiling_green);
+		resource_buildings.sort([](auto const& b1, auto const& b2) { return b1.get_pos_y() < b2.get_pos_y(); });
 
 		for (auto const& building : resource_buildings)
 		{

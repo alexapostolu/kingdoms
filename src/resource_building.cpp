@@ -54,6 +54,7 @@ ResourceBuilding::ResourceBuilding(
 	, info_tab_font(FC_CreateFont())
 	, tab(InfoTab::Info)
 	, tiles_x(_tiles_x), tiles_y(_tiles_y)
+	, state(PLACED)
 {
 	int screen_width, screen_height;
 	SDL_GetRendererOutputSize(renderer, &screen_width, &screen_height);
@@ -135,6 +136,8 @@ bool ResourceBuilding::mouse_press(float mx, float my, float scale)
 {
 	if (!is_clicked(mx, my, scale))
 		return false;
+
+	state = DRAGGING_OK;
 
 	starting_grid_pos_x = grid_pos_x;
 	starting_grid_pos_y = grid_pos_y;
@@ -218,7 +221,7 @@ void ResourceBuilding::mouse_drag(float dx, float dy, float scale)
 	}
 
 	// Check for occupied tiles at the new position
-	bool collision = false;
+	state = DRAGGING_OK;
 	for (int i = 0; i < grid.side_length; ++i)
 	{
 		for (int j = 0; j < grid.side_length; ++j)
@@ -226,31 +229,21 @@ void ResourceBuilding::mouse_drag(float dx, float dy, float scale)
 			if (is_point_in_rhombus(grid_pos_x, grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y) &&
 				grid.data[i][j].occupied)
 			{
-				collision = true;
+				state = DRAGGING_OCCUPIED;
 				break;
 			}
 		}
-		if (collision) break;
+		if (state == DRAGGING_OCCUPIED)
+			break;
 	}
-
-	// Restore the previous position's occupied flags
-	for (int i = 0; i < grid.side_length; ++i)
-	{
-		for (int j = 0; j < grid.side_length; ++j)
-		{
-			if (is_point_in_rhombus(starting_grid_pos_x, starting_grid_pos_y, get_width(scale), get_height(scale), grid.data[i][j].x, grid.data[i][j].y))
-				grid.data[i][j].occupied = true;
-		}
-	}
-
-	// Set tiling colour based on collision
-	tiling_colour = collision ? colour::building_tiling_red : colour::building_tiling_green;
 
 	show_information = false;
 }
 
 bool ResourceBuilding::mouse_release(float scale)
 {
+	state = PLACED;
+
 	// Check for occupied tiles at the new position
 	bool collision = false;
 	for (int i = 0; i < grid.side_length; ++i)
@@ -264,17 +257,17 @@ bool ResourceBuilding::mouse_release(float scale)
 				break;
 			}
 		}
-		if (collision) break;
+		if (collision)
+			break;
 	}
 
-	if (collision || tiling_colour.r == 255)
+	if (collision)
 	{
 		// Revert to starting position if collision detected
 		grid_pos_x = starting_grid_pos_x;
 		grid_pos_y = starting_grid_pos_y;
 		actual_pos_x = starting_grid_pos_x;
 		actual_pos_y = starting_grid_pos_y;
-		tiling_colour = SDL_Colour{ 255, 255, 255, 122 };
 		return true;
 	}
 	else
@@ -303,7 +296,6 @@ bool ResourceBuilding::mouse_release(float scale)
 			}
 		}
 
-		tiling_colour = SDL_Colour{ 255, 255, 255, 122 };
 		show_information = !show_information;
 		return false;
 	}
@@ -330,6 +322,12 @@ void ResourceBuilding::render(SDL_Renderer* renderer, float scale)
 	};
 
 	// Define vertices with position, color, and texture coordinates
+	if (state == DRAGGING_OCCUPIED)
+		tiling_colour = colour::building_tiling_red;
+	else if (state == DRAGGING_OK)
+		tiling_colour = colour::building_tiling_green;
+	else
+		tiling_colour = SDL_Color{ 255, 255, 255, 122 };
 	SDL_Vertex pos[] = {
 		// Top vertex: (grid_pos_x, grid_pos_y - height_half)
 		{{(float)grid_pos_x, (float)(grid_pos_y - height_half)}, tiling_colour, {0, 0}},
@@ -457,6 +455,8 @@ Uint32 ResourceBuilding::resource_callback(Uint32 interval, void* obj)
 
 	return interval;
 }
+
+ResourceBuildingType ResourceBuilding::get_type() const { return type; }
 
 int ResourceBuilding::get_tiles_x() const { return tiles_x; }
 

@@ -83,6 +83,8 @@ public:
 	static Uint32 resource_callback(Uint32 interval, void* obj);
 
 public:
+	ResourceBuildingType get_type() const;
+
 	int get_tiles_x() const;
 	int get_tiles_y() const;
 
@@ -99,7 +101,7 @@ private:
 
 	bool is_clicked(float mx, float my, float scale);
 
-public:
+private:
 	ResourceBuildingType type;
 
 	Grid const& grid;
@@ -124,7 +126,13 @@ public:
 	bool show_information;
 	SDL_FRect info_rect;
 
-private:
+	enum State
+	{
+		PLACED,
+		DRAGGING_OK,
+		DRAGGING_OCCUPIED
+	} state;
+
 	SDL_Color tiling_colour;
 
 	float starting_grid_pos_x, starting_grid_pos_y;
