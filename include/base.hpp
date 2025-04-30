@@ -69,11 +69,16 @@ private:
 	// [REMOVE]
 	int screen_width, screen_height;
 
+	float x, y;
+
+	int zoom_x, zoom_y;
+
 	Grid grid;
 
 	enum class Drag {
 		Building,
-		Grid
+		Grid,
+		None
 	} drag;
 
 	int drag_curr_x;
@@ -87,11 +92,6 @@ private:
 
 	std::forward_list<ResourceBuilding> resource_buildings;
 	std::forward_list<ResourceBuilding> shop_buildings;
-
-	int drag_start_x;
-	int drag_start_y;
-	int end_drag_x = 0, end_drag_y = 0;
-	int stop_drag = 0;
 
 	Button build_open;
 	Button build_close;

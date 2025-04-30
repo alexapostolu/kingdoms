@@ -1,5 +1,6 @@
 # Collect all source files in the engine/src directory
 file(GLOB ENGINE_SOURCE_FILES "*.cpp")
+set(CMAKE_CXX_STANDARD 20)
 
 # Create a static library for the engine
 add_library(engine STATIC ${ENGINE_SOURCE_FILES})
