@@ -12,7 +12,7 @@
 	#include <X11/Xlib.h>
 #endif
 
-int get_screen_width()
+static int get_screen_width()
 {
 #ifdef _WIN32
 	return GetSystemMetrics(SM_CXSCREEN);

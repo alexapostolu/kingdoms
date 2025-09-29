@@ -36,14 +36,14 @@ Base::Base(SDL_Window* _window, SDL_Renderer* _renderer, int sw, int sh)
 		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 300, 200 }, grid, scale, font, 3, 3),
 		ResourceBuilding(ResourceBuildingType::FARMHOUSE, renderer, { 600, 300 }, grid, scale, font, 3, 3),
 		ResourceBuilding(ResourceBuildingType::LUMBERMILL, renderer, { 900, 300 }, grid, scale, font, 4, 4)
-
 	};
+
 	for (auto& resource_building : resource_buildings)
 		resource_building.init_resource_timer();
 }
 
 
-void Base::handle_scroll(int scroll) 
+void Base::handle_scroll(int scroll)
 {
 	SDL_GetMouseState(&zoom_x, &zoom_y);
 
@@ -296,7 +296,7 @@ ResourceBuilding* Base::is_shop_building_clicked(int mouse_x, int mouse_y, float
 
 void Base::update_buildings()
 {
-	for (auto & resource_building : resource_buildings)
+	for (auto& resource_building : resource_buildings)
 		resource_building.update();
 }
 
@@ -319,6 +319,11 @@ void Base::render_resource_bar()
 	FC_SetDefaultColor(font, SDL_Color{ 255, 255, 255, 255 });
 	FC_Draw(font, renderer, 0, screen_height / 24.0f - screen_height / 48.0f, "Wheat: %d", wheat);
 	FC_Draw(font, renderer, 300, screen_height / 24.0f - screen_height / 48.0f, "Wood: %d", wood);
+
+	// Get mouse coordinates and display them for debug purposes
+	int mouse_x, mouse_y;
+	SDL_GetMouseState(&mouse_x, &mouse_y);
+	FC_Draw(font, renderer, 600, screen_height / 24.0f - screen_height / 48.0f, "Mouse: (%d, %d)", mouse_x, mouse_y);
 }
 
 void Base::render_shop()
@@ -338,6 +343,6 @@ void Base::render_shop()
 		SDL_RenderFillRect(renderer, &shop_bar);
 
 		for (auto& shop_resource_building : shop_buildings)
-			shop_resource_building.render(renderer, 1);
+			shop_resource_building.render(renderer, 1); // Scale set to 1 as shop buildings don't scale
 	}
 }
