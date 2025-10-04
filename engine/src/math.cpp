@@ -2,6 +2,13 @@
 
 #include <cmath>
 
+
+bool is_point_in_rectangle(float cx, float cy, SDL_FRect const& rect)
+{
+	return cx > (rect.x - rect.w / 2) && cx < (rect.x + rect.w / 2) &&
+		   cy > (rect.y - rect.h / 2) && cy < (rect.y + rect.h / 2);
+}
+
 bool is_point_in_rhombus(double cx, double cy, double w, double h, double mx, double my)
 {
 	double dx = std::abs(mx - cx);
